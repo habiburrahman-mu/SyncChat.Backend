@@ -1,0 +1,13 @@
+services:
+  syncchat.api:
+    image: ${DOCKER_REGISTRY-}syncchatapi
+    build:
+      context: .
+      dockerfile: SyncChat.API/Dockerfile
+    ports:
+        - "5000:8080"
+    environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+        - ./SyncChat.API:/app
+    restart: unless-stopped
