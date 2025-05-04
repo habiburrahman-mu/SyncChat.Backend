@@ -33,7 +33,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecasts", async (IQuerySender sender) =>
 {
-    await sender.SendAsync(new GetWeatherQuery());
+    return await sender.SendAsync(new GetWeatherQuery());
 })
 .WithName("GetWeatherForecast");
 

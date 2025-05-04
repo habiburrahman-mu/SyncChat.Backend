@@ -2,15 +2,13 @@
 
 namespace SyncChat.API.Features.Weather.SaveWeather;
 
-public class SaveWeatherCommand : ICommand
-{
-}
+public record SaveWeatherCommand : ICommand { }
 
 public class SaveWeatherCommandHandler : ICommandHandler<SaveWeatherCommand>
 {
     public Task HandleAsync(SaveWeatherCommand command, CancellationToken cancellationToken = default)
     {
-        
+
         return Task.CompletedTask;
     }
 }

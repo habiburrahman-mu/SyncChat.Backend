@@ -21,9 +21,9 @@ public static class RequestDiscovery
             .SelectMany(type => type.GetInterfaces()
                 .Where(i => i.IsGenericType
                         && (i.GetGenericTypeDefinition() == genericRequestHandlerType 
-                        || i.GetGenericTypeDefinition() == genericVoidRequestHandlerType
-                        || i.GetGenericTypeDefinition() == genericCommandHandlerType 
-                        || i.GetGenericTypeDefinition() == genericVoidCommandHandlerType))
+                            || i.GetGenericTypeDefinition() == genericVoidRequestHandlerType
+                            || i.GetGenericTypeDefinition() == genericCommandHandlerType 
+                            || i.GetGenericTypeDefinition() == genericVoidCommandHandlerType))
                 .Select(i => new { Interface = i, Implementation = type }));
 
         foreach (var handlerType in handlerTypes)

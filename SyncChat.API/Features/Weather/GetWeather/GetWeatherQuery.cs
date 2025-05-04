@@ -3,13 +3,11 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Weather.GetWeather;
 
-public class GetWeatherQuery : IQuery
-{
-}
+public record GetWeatherQuery : IQuery<int> {}
 
-public class GetWeatherCommandHandler : IQueryHandler<GetWeatherQuery>
+public class GetWeatherQueryHandler : IQueryHandler<GetWeatherQuery, int>
 {
-    public Task HandleAsync(GetWeatherQuery command, CancellationToken cancellationToken = default)
+    public Task<int> HandleAsync(GetWeatherQuery query, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(3);
     }
