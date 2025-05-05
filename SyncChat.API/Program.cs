@@ -1,6 +1,5 @@
-using SyncChat.API.Features.Weather.GetWeather;
-using SyncChat.API.Features.Weather.SaveWeather;
 using SyncChat.API.Host;
+using SyncChat.API.Routing;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Sender.Internal;
 using System.Reflection;
@@ -31,17 +30,7 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecasts", async (IQuerySender sender) =>
-{
-    return await sender.SendAsync(new GetWeatherQuery());
-})
-.WithName("GetWeatherForecast");
-
-app.MapPost("/weatherforecasts", async (ICommandSender sender) =>
-{
-    await sender.SendAsync(new SaveWeatherCommand());
-})
-.WithName("SaveWeatherForecast");
+app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.UseCors(builder => builder.AllowAnyOrigin());
 
