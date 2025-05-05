@@ -16,6 +16,8 @@ builder.Services.RegisterRequestHandlers();
 
 builder.Services.AddCors();
 
+builder.Services.AddEndpointsApiExplorer();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -27,20 +29,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.UseCors(builder => builder.AllowAnyOrigin());
 
 app.Run();
-
-
-
-internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -22,7 +22,7 @@ public static class EndpointRegistrar
 
             if(prefixAttribute.GroupName is not null)
             {
-                group.WithGroupName(prefixAttribute.GroupName);
+                group.WithTags(prefixAttribute.GroupName);
             }
 
             List<Type> implementations = assemblies

@@ -11,6 +11,6 @@ public class GetWeatherEndpoint : IWeatherEndpoint
         {
             return await sender.SendAsync(new GetWeatherQuery());
         })
-        .WithName("GetWeatherForecast");
+        .WithSummary("GetWeatherForecast");
     }
 }

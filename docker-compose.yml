@@ -5,8 +5,8 @@ services:
           context: .
           dockerfile: SyncChat.API/Dockerfile
         ports:
-            - "5000:8080"
-            - "5001:8081"
+            - "5000:5000"
+            - "5001:5001"
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
         volumes:

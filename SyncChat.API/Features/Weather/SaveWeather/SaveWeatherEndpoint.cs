@@ -11,6 +11,6 @@ public class SaveWeatherEndpoint : IWeatherEndpoint
         {
             await sender.SendAsync(new SaveWeatherCommand());
         })
-        .WithName("SaveWeatherForecast");
+        .WithSummary("SaveWeatherForecast");
     }
 }
