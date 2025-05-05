@@ -20,6 +20,11 @@ public static class EndpointRegistrar
             string routeGroupPrefix = prefixAttribute.Prefix;
             RouteGroupBuilder group = app.MapGroup(routeGroupPrefix);
 
+            if(prefixAttribute.GroupName is not null)
+            {
+                group.WithGroupName(prefixAttribute.GroupName);
+            }
+
             List<Type> implementations = assemblies
                 .SelectMany(a => a.GetTypes())
                 .Where(t => endpointInterface.IsAssignableFrom(t) &&

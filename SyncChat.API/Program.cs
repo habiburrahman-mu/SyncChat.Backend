@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using SyncChat.API.Host;
 using SyncChat.API.Routing;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -21,6 +22,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
