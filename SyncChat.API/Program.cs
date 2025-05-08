@@ -1,11 +1,15 @@
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
 using SyncChat.API.Routing;
+using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Sender.Internal;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Options pattern
+builder.Services.Configure<JWTSettings>(builder.Configuration.GetSection("JWT"));
 
 builder.Services.AddOpenApi();
 
