@@ -10,7 +10,7 @@ services:
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
         volumes:
-          - ./SyncChat.API:/app
+          - /mnt/c/Users/User/SyncChat/SyncChat.API:/app
         restart: unless-stopped
 
     postgres:
@@ -21,6 +21,9 @@ services:
             POSTGRES_DB: syncchatdb
         ports:
             - "5432:5432"
-        # volumes:
-        #     - postgres_data:/var/lib/postgresql/data
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
         restart: unless-stopped
+
+volumes:
+  postgres_data:

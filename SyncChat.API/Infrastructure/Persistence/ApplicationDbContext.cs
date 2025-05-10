@@ -4,9 +4,10 @@ namespace SyncChat.API.Infrastructure.Persistence
 {
     public class ApplicationDbContext
     {
-        public ApplicationDbContext()
+        public ApplicationDbContext(MockDb mockDb)
         {
-            Users = new();
+            Users = mockDb.Users;
+
         }
 
         public List<User> Users { get; }

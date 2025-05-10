@@ -1,5 +1,6 @@
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
+using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Routing;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -13,6 +14,8 @@ builder.Services.Configure<JWTSettings>(builder.Configuration.GetSection("JWT"))
 
 builder.Services.AddOpenApi();
 
+builder.Services.AddSingleton<MockDb>();
+builder.Services.AddScoped<ApplicationDbContext>();
 builder.Services.AddScoped<IQuerySender, QuerySender>();
 builder.Services.AddScoped<ICommandSender, CommandSender>();
 
