@@ -7,10 +7,10 @@ public record ValidationError : Error
     public ValidationError(Error[] errors)
         : base(
             "Validation.General",
-            "One or more validation",
+            "One or more validation errors occurred.",
             ErrorType.Validation)
     {
-        this.Errors = errors;
+        Errors = errors;
     }
 
     public static ValidationError FromResults(IEnumerable<Result> results) => 
