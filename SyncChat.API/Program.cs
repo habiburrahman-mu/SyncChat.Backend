@@ -1,5 +1,6 @@
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
+using SyncChat.API.Infrastructure.Exceptions;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Routing;
 using SyncChat.API.Shared.Configuration;
@@ -19,6 +20,9 @@ builder.Services.AddScoped<ApplicationDbContext>();
 builder.Services.AddScoped<IQuerySender, QuerySender>();
 builder.Services.AddScoped<ICommandSender, CommandSender>();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.RegisterRequestHandlers();
 
 builder.Services.AddCors();
@@ -35,6 +39,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseExceptionHandler();
 
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
