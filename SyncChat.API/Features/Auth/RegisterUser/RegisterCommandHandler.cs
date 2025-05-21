@@ -2,28 +2,31 @@
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Entities;
 using System.Text.Json;
+using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Security.Contracts;
 
 namespace SyncChat.API.Features.Auth.RegisterUser;
 
-public class RegisterCommandHandler : ICommandHandler<RegisterUserCommand>
+public sealed class RegisterCommandHandler(ApplicationDbContext applicationDbContext, IPasswordHasher passwordHasher)
+    : ICommandHandler<RegisterUserCommand, Result<Guid>>
 {
-    private readonly ApplicationDbContext applicationDbContext;
-
-    public RegisterCommandHandler(ApplicationDbContext applicationDbContext)
+    public async Task<Result<Guid>> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
-        this.applicationDbContext = applicationDbContext;
-    }
+        if (applicationDbContext.Users.Any(u => string.Equals(u.UserName, command.UserName, StringComparison.OrdinalIgnoreCase)))
+            return Result.Failure<Guid>(UserErrors.UserNameNotUnique);
 
-    public async Task HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
-    {
+        if(applicationDbContext.Users.Any(u => string.Equals(u.Email, command.Email, StringComparison.OrdinalIgnoreCase)))
+            return Result.Failure<Guid>(UserErrors.EmailNotUnique);
+
         User user = new()
         {
             UserID = 1,
             UUID = Guid.NewGuid(),
-            UserName = command.userName,
-            Email = command.email,
+            UserName = command.UserName,
+            Email = command.Email,
             Phone = null,
-            PasswordHash = command.password,
+            PasswordHash = passwordHasher.Hash(command.Password),
             Profile = JsonDocument.Parse("{}"),
             Status = UserStatus.Offline,
             LastActive = null,
@@ -36,5 +39,7 @@ public class RegisterCommandHandler : ICommandHandler<RegisterUserCommand>
         applicationDbContext.Users.Add(user);
 
         await Task.CompletedTask;
+
+        return user.UUID;
     }
 }

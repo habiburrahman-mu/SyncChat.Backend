@@ -1,8 +1,7 @@
-﻿using SyncChat.API.Shared.Sender.Contracts;
+﻿using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Auth.RegisterUser;
 
-public record RegisterUserCommand(
-    string userName,
-    string email,
-    string password) : ICommand;
+public sealed record RegisterUserCommand(string UserName, string Email, string Password)
+    : ICommand<Result<Guid>>;

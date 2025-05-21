@@ -1,22 +1,31 @@
-﻿using SyncChat.API.Shared.Sender.Contracts;
+﻿using Microsoft.AspNetCore.Http;
+using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.Auth.RegisterUser;
 
-public class RegisterUserEndpoint : IAuthEndpoint
+public sealed class RegisterUserEndpoint : IAuthEndpoint
 {
+    public sealed record RegisterUserRequest(string UserName, string Email, string Password);
+
     public void Map(RouteGroupBuilder group)
     {
         group.MapPost(AuthRoute.Register, async (RegisterUserRequest request, ICommandSender sender, CancellationToken cancellationToken) =>
         {
             RegisterUserCommand command = new(
-                request.userName,
-                request.email,
-                request.password);
+                request.UserName,
+                request.Email,
+                request.Password);
 
-            await sender.SendAsync(command, cancellationToken);
+            Result<Guid> result = await sender.SendAsync(command, cancellationToken);
 
-            return Results.Created();
-        });
+            return result.Match(
+                id => Results.Created("", id),
+                CustomResults.Problem);
+        })
+        .Produces<Guid>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict);
     }
 }

@@ -1,5 +1,6 @@
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
+using SyncChat.API.Infrastructure;
 using SyncChat.API.Infrastructure.Exceptions;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Routing;
@@ -22,6 +23,8 @@ builder.Services.AddScoped<ICommandSender, CommandSender>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.RegisterRequestHandlers();
 
