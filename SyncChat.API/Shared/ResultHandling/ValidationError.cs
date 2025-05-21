@@ -2,7 +2,7 @@
 
 public record ValidationError : Error
 {
-    private readonly Error[] Errors;
+    public readonly Error[] Errors;
 
     public ValidationError(Error[] errors)
         : base(
