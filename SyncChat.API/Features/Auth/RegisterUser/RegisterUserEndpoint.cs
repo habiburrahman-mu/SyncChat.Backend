@@ -9,7 +9,7 @@ public sealed class RegisterUserEndpoint : IAuthEndpoint
 {
     public sealed record RegisterUserRequest(string UserName, string Email, string Password);
 
-    public void Map(RouteGroupBuilder group)
+    public void Map(RouteGroupBuilder group)    
     {
         group.MapPost(AuthRoute.Register, async (RegisterUserRequest request, ICommandSender sender, CancellationToken cancellationToken) =>
         {
