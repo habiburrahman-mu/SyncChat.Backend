@@ -18,7 +18,7 @@ public static class UserErrors
 
     public static readonly Error EmailNotUnique = Error.Conflict(
         "Users.EmailNotUnique",
-        "The provided email is not unique");
+        "Registration already exists with the provided email.");
 
     public static readonly Error UserNameNotUnique = Error.Conflict(
         "Users.UserNameNotUnique",
