@@ -17,6 +17,7 @@ public class MockDb
                 UserID = 1,
                 UUID = Guid.Parse("e7424d80-d60a-4746-b521-3dc1f91525ad"),
                 UserName = "john_doe",
+                Name = "John Doe",
                 Email = "john.doe@example.com",
                 Phone = null,
                 PasswordHash = "5442A43E152BE7FBE26E98E0623CE4523AFE00AF051A5FC4260B783A953F0D2F-3279916E982569554B6C720497387BDB", // password123
