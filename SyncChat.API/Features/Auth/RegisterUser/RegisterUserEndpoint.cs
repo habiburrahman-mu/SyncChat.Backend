@@ -7,7 +7,7 @@ namespace SyncChat.API.Features.Auth.RegisterUser;
 
 public sealed class RegisterUserEndpoint : IAuthEndpoint
 {
-    public sealed record RegisterUserRequest(string UserName, string Email, string Password);
+    public sealed record RegisterUserRequest(string UserName, string Name, string Email, string Password);
 
     public void Map(RouteGroupBuilder group)    
     {
@@ -15,6 +15,7 @@ public sealed class RegisterUserEndpoint : IAuthEndpoint
         {
             RegisterUserCommand command = new(
                 request.UserName,
+                request.Name,
                 request.Email,
                 request.Password);
 

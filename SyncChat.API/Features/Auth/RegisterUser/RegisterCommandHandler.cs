@@ -24,6 +24,7 @@ public sealed class RegisterCommandHandler(ApplicationDbContext applicationDbCon
             UserID = 1,
             UUID = Guid.NewGuid(),
             UserName = command.UserName,
+            Name = command.Name,
             Email = command.Email,
             Phone = null,
             PasswordHash = passwordHasher.Hash(command.Password),

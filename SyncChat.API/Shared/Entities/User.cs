@@ -15,6 +15,7 @@ public class User : BaseEntity
     public long UserID { get; set; }
     public Guid UUID { get; set; }
     public string UserName { get; set; } = null!;
+    public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string? Phone { get; set; } 
     public string PasswordHash { get; set; } = null!;
