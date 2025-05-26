@@ -21,6 +21,7 @@ public class TokenEndpoint : IAuthEndpoint
                 token => Results.Ok(token),
                 CustomResults.Problem);
         })
+        .WithSummary("Token")
         .Produces<string>(StatusCodes.Status200OK);
     }
 }

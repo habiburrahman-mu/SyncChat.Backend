@@ -13,12 +13,14 @@ public static class EndpointRegistrar
                         t.GetCustomAttribute<RouteGroupPrefixAttribute>() is not null)
             .ToList();
 
+        RouteGroupBuilder api = app.MapGroup("/api");
+
         foreach (Type endpointInterface in endpointInterfaces)
         {
             RouteGroupPrefixAttribute prefixAttribute = endpointInterface.GetCustomAttribute<RouteGroupPrefixAttribute>()!;
 
             string routeGroupPrefix = prefixAttribute.Prefix;
-            RouteGroupBuilder group = app.MapGroup(routeGroupPrefix);
+            RouteGroupBuilder group = api.MapGroup(routeGroupPrefix);
 
             if(prefixAttribute.GroupName is not null)
             {

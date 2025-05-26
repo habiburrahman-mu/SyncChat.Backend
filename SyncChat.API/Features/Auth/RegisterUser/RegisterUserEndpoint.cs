@@ -25,6 +25,7 @@ public sealed class RegisterUserEndpoint : IAuthEndpoint
                 id => Results.Created("", id),
                 CustomResults.Problem);
         })
+        .WithSummary("RegisterUser")
         .Produces<Guid>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict);
