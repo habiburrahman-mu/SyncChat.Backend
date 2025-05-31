@@ -1,5 +1,10 @@
-﻿namespace SyncChat.API.Shared.Configuration;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace SyncChat.API.Shared.Configuration;
+
+[ExcludeFromCodeCoverage(
+    Justification = "This is a configuration class and does not require coverage."
+)]
 public class JWTSettings
 {
     public string Secret { get; set; } = null!;

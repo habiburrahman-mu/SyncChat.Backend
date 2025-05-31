@@ -2,7 +2,7 @@
 using SyncChat.API.Infrastructure.Security;
 using System.Diagnostics.CodeAnalysis;
 
-namespace SyncChat.Test.Infrastructure;
+namespace SyncChat.Test.Infrastructure.Security;
 
 [ExcludeFromCodeCoverage(
     Justification = "This is a test class and does not require coverage."
