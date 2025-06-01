@@ -9,11 +9,11 @@ namespace SyncChat.Test.Infrastructure.Security;
 )]
 public class PasswordHasherTests
 {
-    private readonly PasswordHasher passwordHasher;
+    private readonly PasswordHasher _passwordHasher;
 
     public PasswordHasherTests()
     {
-        passwordHasher = new PasswordHasher();
+        _passwordHasher = new PasswordHasher();
     }
 
     #region Hash Tests
@@ -24,7 +24,7 @@ public class PasswordHasherTests
     public void Hash_ShouldThrowArgumentException_WhenPasswordEmptyOrWhiteSpace(string password)
     {
         // Act
-        Action act = () => passwordHasher.Hash(password);
+        Action act = () => _passwordHasher.Hash(password);
 
         // Assert
         act.Should()
@@ -40,7 +40,7 @@ public class PasswordHasherTests
         string password = "ValidPassword@123";
 
         // Act
-        string result = passwordHasher.Hash(password);
+        string result = _passwordHasher.Hash(password);
 
         // Assert
         result.Should().NotBeNullOrEmpty();
@@ -57,10 +57,10 @@ public class PasswordHasherTests
     {
         // Arrange
         string password = "ValidPassword@123";
-        string hash = passwordHasher.Hash(password);
+        string hash = _passwordHasher.Hash(password);
         
         // Act
-        bool result = passwordHasher.Verify(password, hash);
+        bool result = _passwordHasher.Verify(password, hash);
         
         // Assert
         result.Should().BeTrue();
@@ -74,10 +74,10 @@ public class PasswordHasherTests
 
         string wrongPassword = "WrongPassword@456";
         
-        string hash = passwordHasher.Hash(password);
+        string hash = _passwordHasher.Hash(password);
         
         // Act
-        bool result = passwordHasher.Verify(wrongPassword, hash);
+        bool result = _passwordHasher.Verify(wrongPassword, hash);
         
         // Assert
         result.Should().BeFalse();
@@ -89,10 +89,10 @@ public class PasswordHasherTests
     public void Verify_ShouldReturnFalse_WhenPasswordIsInvalid(string invalidPassword)
     {
         // Arrange
-        string hashedPassword = passwordHasher.Hash("ValidPassword@123");
+        string hashedPassword = _passwordHasher.Hash("ValidPassword@123");
 
         // Act
-        bool result = passwordHasher.Verify(invalidPassword, hashedPassword);
+        bool result = _passwordHasher.Verify(invalidPassword, hashedPassword);
 
         // Assert
         result.Should().BeFalse();
@@ -107,7 +107,7 @@ public class PasswordHasherTests
         string password = "ValidPassword@123";
 
         // Act
-        bool result = passwordHasher.Verify(password, invalidHash);
+        bool result = _passwordHasher.Verify(password, invalidHash);
 
         // Assert
         result.Should().BeFalse();
@@ -121,7 +121,7 @@ public class PasswordHasherTests
         string invalidHashedPassword = "invalid-format-without-split";
 
         // Act
-        bool result = passwordHasher.Verify(password, invalidHashedPassword);
+        bool result = _passwordHasher.Verify(password, invalidHashedPassword);
 
         // Assert
         result.Should().BeFalse();
@@ -134,11 +134,25 @@ public class PasswordHasherTests
         string password = "RepeatedPassword";
 
         // Act
-        string hash1 = passwordHasher.Hash(password);
-        string hash2 = passwordHasher.Hash(password);
+        string hash1 = _passwordHasher.Hash(password);
+        string hash2 = _passwordHasher.Hash(password);
 
         // Assert
         hash1.Should().NotBe(hash2);
+    }
+
+    [Fact(DisplayName = "Verify should return false when hashed password parts are not valid hex")]
+    public void Verify_ShouldReturnFalse_WhenHashedPasswordIsInvalidHex()
+    {
+        // Arrange
+        string password = "SomePassword123!";
+        string invalidHashedPassword = "NotAHexString-EitherThis";
+
+        // Act
+        bool result = _passwordHasher.Verify(password, invalidHashedPassword);
+
+        // Assert
+        result.Should().BeFalse();
     }
 
     #endregion Verify Tests
