@@ -40,11 +40,11 @@ public class TokenProviderTests: IClassFixture<TokenProviderTestFixture>
     {
         // Arrange 
         User user = _fixture.TestUser;
-        JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+        
 
         // Act
         string token = _tokenProvider.GenerateToken(user);
-        JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
+        JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
 
         // Assert
         jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.UUID.ToString());
