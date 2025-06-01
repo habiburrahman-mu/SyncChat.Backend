@@ -66,4 +66,21 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         jwtToken.Issuer.Should().Be(_fixture.JwtSettings.Issuer);
         jwtToken.Audiences.Should().Contain(_fixture.JwtSettings.Audience);
     }
+
+    [Fact(DisplayName = "Generated token should expire after configured duration")]
+    public void GenerateToken_ShouldHaveCorrectExpirationTime()
+    {
+        // Arrange
+        DateTime beforeGeneration = DateTime.UtcNow;
+        User user = _fixture.TestUser;
+        int expirationInMinutes = _fixture.JwtSettings.ExpirationInMinutes;
+
+        // Act
+        string token = _tokenProvider.GenerateToken(user);
+        JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
+
+        // Assert
+        jwtToken.ValidTo.Should().BeAfter(beforeGeneration.AddMinutes(expirationInMinutes - 1));
+        jwtToken.ValidFrom.Should().BeBefore(beforeGeneration.AddMinutes(expirationInMinutes + 1));
+    }
 }
