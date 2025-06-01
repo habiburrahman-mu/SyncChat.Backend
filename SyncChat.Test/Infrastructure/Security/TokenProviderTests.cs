@@ -4,6 +4,7 @@ using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.Test.Infrastructure.Security.Fixtures;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace SyncChat.Test.Infrastructure.Security;
 
@@ -32,5 +33,21 @@ public class TokenProviderTests: IClassFixture<TokenProviderTestFixture>
 
         // Assert
         token.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact(DisplayName = "Generated token should contain expected claims")]
+    public void GenerateToken_ShouldContainExpectedClaims()
+    {
+        // Arrange 
+        User user = _fixture.TestUser;
+        JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+
+        // Act
+        string token = _tokenProvider.GenerateToken(user);
+        JwtSecurityToken jwtToken = handler.ReadJwtToken(token);
+
+        // Assert
+        jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.UUID.ToString());
+        jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == user.Email);
     }
 }
