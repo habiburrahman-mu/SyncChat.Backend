@@ -22,7 +22,7 @@ namespace SyncChat.API.Infrastructure.Security;
 /// </summary>
 public sealed class PasswordHasher : IPasswordHasher
 {
-    private const int SalSize = 16; // 16 bytes of salt (a random value added to the password before hashing to make hashes unique)
+    private const int SaltSize = 16; // 16 bytes of salt (a random value added to the password before hashing to make hashes unique)
 
     private const int HashSize = 32; // Final hash will be 32 bytes.
 
@@ -38,7 +38,7 @@ public sealed class PasswordHasher : IPasswordHasher
         if (string.IsNullOrWhiteSpace(password))
             throw new ArgumentException("Password cannot be null or empty.", nameof(password));
 
-        byte[] salt = RandomNumberGenerator.GetBytes(SalSize);
+        byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
 
         // Why PBKDF2:
         // Because it's a key derivation function specifically designed to be
