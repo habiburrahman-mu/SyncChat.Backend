@@ -6,7 +6,7 @@ public static class UserErrors
 {
     public static Error NotFound(Guid userId) => Error.NotFound(
         "Users.NotFound",
-        $"The user with the Id = '{userId}' was not found");
+        $"The user with the Id = '{userId}' was not found.");
 
     public static Error Unauthorized() => Error.Failure(
         "Users.Unauthorized",
@@ -14,7 +14,7 @@ public static class UserErrors
 
     public static readonly Error NotFoundByEmail = Error.NotFound(
         "Users.NotFoundByEmail",
-        "The user with the specified email was not found");
+        "The user with the specified email was not found.");
 
     public static readonly Error EmailNotUnique = Error.Conflict(
         "Users.EmailNotUnique",
@@ -22,7 +22,7 @@ public static class UserErrors
 
     public static readonly Error UserNameNotUnique = Error.Conflict(
         "Users.UserNameNotUnique",
-        "The provided user name is not unique");
+        "The provided user name is not unique.");
 
     public static readonly Error InvalidUserNamePassword = Error.Validation(
         "Users.Invalid.Credentials",
