@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Security.Contracts;
 
@@ -9,7 +11,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration) =>
-            services.AddAuthenticationInternal(configuration);
+            services.AddAuthenticationInternal(configuration)
+                    .AddPersistence(configuration);
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -49,4 +52,12 @@ public static class DependencyInjection
 
     //    return services;
     //}
+
+    private static IServiceCollection AddPersistence(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        return services;
+    }
 }

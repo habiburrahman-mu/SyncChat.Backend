@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
 using SyncChat.API.Infrastructure;
@@ -48,5 +49,17 @@ app.UseExceptionHandler();
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+catch (Exception ex)
+{
+    // log or handle error properly
+    Console.WriteLine($"Database migration failed: {ex.Message}");
+}
 
 app.Run();
