@@ -5,18 +5,19 @@ using System.Text.Json;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.Security.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace SyncChat.API.Features.Auth.RegisterUser;
 
-public sealed class RegisterCommandHandler(ApplicationDbContext applicationDbContext, IPasswordHasher passwordHasher)
+public sealed class RegisterCommandHandler(ApplicationDbContext dbContext, IPasswordHasher passwordHasher)
     : ICommandHandler<RegisterUserCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {
-        if (applicationDbContext.Users.Any(u => string.Equals(u.UserName, command.UserName, StringComparison.OrdinalIgnoreCase)))
+        if (await dbContext.Users.AnyAsync(u => EF.Functions.ILike(u.UserName.ToLower(), command.UserName.ToLower()), cancellationToken))
             return Result.Failure<Guid>(UserErrors.UserNameNotUnique);
 
-        if(applicationDbContext.Users.Any(u => string.Equals(u.Email, command.Email, StringComparison.OrdinalIgnoreCase)))
+        if (await dbContext.Users.AnyAsync(u => EF.Functions.ILike(u.Email.ToLower(), command.Email.ToLower()), cancellationToken))
             return Result.Failure<Guid>(UserErrors.EmailNotUnique);
 
         User user = new()
@@ -37,9 +38,8 @@ public sealed class RegisterCommandHandler(ApplicationDbContext applicationDbCon
             IsBanned = false
         };
 
-        applicationDbContext.Users.Add(user);
-
-        await Task.CompletedTask;
+        await dbContext.Users.AddAsync(user, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return user.UUID;
     }
