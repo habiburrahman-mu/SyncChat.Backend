@@ -11,7 +11,7 @@ public class TokenEndpoint : IAuthEndpoint
 
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(AuthRoute.Token, async ([FromBody]TokenRequest request, IQuerySender sender, CancellationToken cancellationToken) =>
+        group.MapPost(AuthRoute.Token, async ([FromBody]TokenRequest request, IQuerySender sender, CancellationToken cancellationToken) =>
         {
             TokenQuery query = new(request.UserName, request.Password);
 
