@@ -2,7 +2,7 @@
 
 namespace SyncChat.API.Shared.Entities;
 
-public class User : BaseEntity
+public class User
 {
     public User()
     {
