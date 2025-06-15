@@ -45,7 +45,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Status)
                // Postgres enum type - registered in DbContext
-               .HasColumnType("userstatus")
+               .HasColumnType("user_status")
                .IsRequired();
 
         builder.Property(u => u.LastActive)
