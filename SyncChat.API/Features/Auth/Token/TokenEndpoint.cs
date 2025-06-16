@@ -15,7 +15,7 @@ public class TokenEndpoint : IAuthEndpoint
         {
             TokenQuery query = new(request.UserName, request.Password);
 
-            Result<string> result = await sender.SendAsync(query, cancellationToken);
+            Result<TokenResponse> result = await sender.SendAsync(query, cancellationToken);
 
             return result.Match(
                 token => Results.Ok(token),
