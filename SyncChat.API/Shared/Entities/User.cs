@@ -27,6 +27,9 @@ public class User
     public bool IsVerified { get; set; }
     public bool IsBanned { get; set; }
 
+    // Navigation collections
+    public ICollection<Conversation> CreatedConversations { get; set; } = new List<Conversation>();
+    public ICollection<Message> SentMessages { get; set; } = new List<Message>();
 }
 
 public enum UserStatus
