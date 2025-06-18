@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.HasPostgresEnum<UserStatus>();
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
