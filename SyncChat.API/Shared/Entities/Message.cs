@@ -13,7 +13,6 @@ public class Message
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? DeletedAt { get; set; }
     public long? ReplyTo { get; set; }
-    public string? SearchVector { get; set; }
     public bool IsEdited { get; set; } = false;
     public DateTimeOffset? EditedAt { get; set; }
 

@@ -14,8 +14,6 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
 
         builder.Property(x => x.Type).HasConversion<string>();
 
-        builder.Property(x => x.SearchVector).HasColumnType("tsvector");
-
         builder.HasOne(m => m.Conversation)
                .WithMany(c => c.Messages)
                .HasForeignKey(m => m.ConversationId)
