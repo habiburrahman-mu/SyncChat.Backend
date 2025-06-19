@@ -11,6 +11,12 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Conversation> Conversations { get; set; } = null!;
+    public DbSet<ConversationMember> ConversationMembers { get; set; } = null!;
+    public DbSet<Message> Messages { get; set; } = null!;
+    public DbSet<MessageStatus> MessageStatuses { get; set; } = null!;
+    public DbSet<MessageReaction> MessageReactions { get; set; } = null!;
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,6 +24,10 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new ConversationConfiguration());
+        modelBuilder.ApplyConfiguration(new ConversationMemberConfiguration());
+        modelBuilder.ApplyConfiguration(new MessageConfiguration());
+        modelBuilder.ApplyConfiguration(new MessageStatusConfiguration());
+        modelBuilder.ApplyConfiguration(new MessageReactionConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
