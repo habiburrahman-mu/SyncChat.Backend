@@ -10,8 +10,6 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
     {
         builder.HasKey(x => x.MessageId);
 
-        builder.Property(x => x.Uuid).HasDefaultValueSql("gen_random_uuid()");
-
         builder.Property(x => x.MetaData).HasColumnType("jsonb").HasDefaultValueSql("'{}'::jsonb");
 
         builder.Property(x => x.Type).HasConversion<string>();
