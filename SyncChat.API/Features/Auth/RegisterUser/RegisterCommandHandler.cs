@@ -22,7 +22,6 @@ public sealed class RegisterCommandHandler(ApplicationDbContext dbContext, IPass
 
         User user = new()
         {
-            UserID = 1,
             UUID = Guid.NewGuid(),
             UserName = command.UserName,
             Name = command.Name,

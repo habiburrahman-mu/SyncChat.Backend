@@ -23,4 +23,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Users\GetUserListByName\" />
+  </ItemGroup>
+
 </Project>
