@@ -17,5 +17,9 @@ public class EndpointConstants
         public const string SaveWeatherForecast = "/";
     }
 
-
+    public static class UserRoute
+    {
+        public const string Base = "user";
+        public const string GetUserByUserName = "GetByUserName";
+    }
 }
