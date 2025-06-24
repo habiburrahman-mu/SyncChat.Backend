@@ -6,9 +6,9 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Users.GetUserByUserName;
 
-public sealed record GetUserByUserNameQuery(string UserName) : IQuery<Result<GetUserByUserNameResponse?>>;
+public sealed record GetUserByUserNameQuery(string UserName) : IQuery<Result<GetUserByUserNameResponse>>;
 
-public sealed class GetUserByUserNameQueryHandler : IQueryHandler<GetUserByUserNameQuery, Result<GetUserByUserNameResponse?>>
+public sealed class GetUserByUserNameQueryHandler : IQueryHandler<GetUserByUserNameQuery, Result<GetUserByUserNameResponse>>
 {
     private readonly ApplicationDbContext _dbContext;
     public GetUserByUserNameQueryHandler(ApplicationDbContext dbContext)
@@ -16,16 +16,16 @@ public sealed class GetUserByUserNameQueryHandler : IQueryHandler<GetUserByUserN
         _dbContext = dbContext;
     }
 
-    public async Task<Result<GetUserByUserNameResponse?>> HandleAsync(GetUserByUserNameQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<GetUserByUserNameResponse>> HandleAsync(GetUserByUserNameQuery query, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query.UserName))
-            return Result.Success<GetUserByUserNameResponse?>(null);
+            return Result.Failure<GetUserByUserNameResponse>(UserErrors.InvalidUserName);
 
         var user = await _dbContext.Users
             .Where(u => EF.Functions.ILike(u.UserName.ToLower(), query.UserName.ToLower()))
             .Select(u => new GetUserByUserNameResponse(u.UserID, u.UUID, u.UserName, u.Name))
             .FirstOrDefaultAsync(cancellationToken);
 
-        return user;
+        return user ?? Result.Failure<GetUserByUserNameResponse>(UserErrors.UserNameNotFound(query.UserName));
     }
 }

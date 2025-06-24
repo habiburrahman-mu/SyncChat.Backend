@@ -27,4 +27,12 @@ public static class UserErrors
     public static readonly Error InvalidUserNamePassword = Error.Validation(
         "Users.Invalid.Credentials",
         "The username or password you entered is incorrect.");
+
+    public static readonly Error InvalidUserName = Error.Validation(
+         "Users.Invalid.UserNameRequest",
+         "Invalid user name.");
+
+    public static Error UserNameNotFound(string userName) => Error.NotFound(
+       "Users.NotFound",
+       $"The user with the user name = '{userName}' was not found.");
 }
