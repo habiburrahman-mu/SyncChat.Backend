@@ -48,6 +48,12 @@ app.UseExceptionHandler();
 
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
+app.Use(async (context, next) =>
+{
+    await Task.Delay(1000); // 1 second delay
+    await next();
+});
+
 app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 try
