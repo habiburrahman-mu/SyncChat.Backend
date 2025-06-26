@@ -20,6 +20,6 @@ public class EndpointConstants
     public static class UserRoute
     {
         public const string Base = "user";
-        public const string GetUserByUserName = "GetByUserName";
+        public const string GetUserByUserName = "/getByUserName";
     }
 }
