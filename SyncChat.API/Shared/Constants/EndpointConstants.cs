@@ -27,8 +27,8 @@ public class EndpointConstants
     {
         public const string Base = "conversation";
         public const string GetConversationsByUserId = "/getByUserId";
-        public const string GetConversationById = "/getById";
-        public const string SendMessage = "/sendMessage";
+        public const string GetById = "/getById";
+        public const string Create = "/create";
         //public const string UpdateConversation = "/update";
         //public const string DeleteConversation = "/delete";
     }

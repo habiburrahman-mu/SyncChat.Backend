@@ -9,6 +9,8 @@ using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Sender.Internal;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,12 @@ builder.Services.RegisterRequestHandlers();
 builder.Services.AddCors();
 
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.ConfigureHttpJsonOptions(opts =>
+{
+    opts.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 
 var app = builder.Build();
 
