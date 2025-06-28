@@ -22,7 +22,7 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
 
         List<Claim> claims = new()
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UUID.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserID.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
         };
 
