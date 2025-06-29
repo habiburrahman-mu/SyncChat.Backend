@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using SyncChat.API.Host;
 using SyncChat.API.Infrastructure;
@@ -14,10 +15,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Options pattern
-builder.Services.Configure<JWTSettings>(builder.Configuration.GetSection("JWT"));
-
-builder.Services.AddOpenApi();
+IConfigurationSection jwtSection = builder.Configuration.GetSection("JWT");
+builder.Services.Configure<JWTSettings>(jwtSection);
+JWTSettings jwtSettingsInstance = jwtSection.Get<JWTSettings>()!;
+IOptions<JWTSettings> jwtOptions = Options.Create(jwtSettingsInstance);
 
 builder.Services.AddSingleton<MockDb>();
 builder.Services.AddScoped<ApplicationDbContext>();
@@ -27,13 +28,16 @@ builder.Services.AddScoped<ICommandSender, CommandSender>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, jwtOptions);
 
 builder.Services.RegisterRequestHandlers();
 
 builder.Services.AddCors();
 
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
 
 builder.Services.ConfigureHttpJsonOptions(opts =>
 {
@@ -53,6 +57,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseExceptionHandler();
+
+app.UseAuthentication().UseAuthorization();
 
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
