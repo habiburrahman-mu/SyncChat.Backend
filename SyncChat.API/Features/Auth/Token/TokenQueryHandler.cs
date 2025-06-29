@@ -12,7 +12,7 @@ using System.Linq;
 namespace SyncChat.API.Features.Auth.Token;
 
 public sealed class TokenQueryHandler(ApplicationDbContext dbContext, IPasswordHasher passwordHasher, ITokenProvider tokenProvider, IOptions<JWTSettings> jwtSettings)
-    : IQueryHandler<TokenQuery, Result<TokenResponse>>
+    : IQueryHandler<TokenQuery, TokenResponse>
 {
     private readonly JWTSettings _jwtSettings = jwtSettings.Value;
 

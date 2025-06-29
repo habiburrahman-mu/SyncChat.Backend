@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SyncChat.API.Features.Auth.RegisterUser;
 
 public sealed class RegisterCommandHandler(ApplicationDbContext dbContext, IPasswordHasher passwordHasher)
-    : ICommandHandler<RegisterUserCommand, Result<Guid>>
+    : ICommandHandler<RegisterUserCommand, Guid>
 {
     public async Task<Result<Guid>> HandleAsync(RegisterUserCommand command, CancellationToken cancellationToken = default)
     {

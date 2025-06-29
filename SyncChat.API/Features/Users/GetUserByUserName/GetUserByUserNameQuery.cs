@@ -6,9 +6,9 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Users.GetUserByUserName;
 
-public sealed record GetUserByUserNameQuery(string UserName) : IQuery<Result<GetUserByUserNameResponse>>;
+public sealed record GetUserByUserNameQuery(string UserName) : IQuery<GetUserByUserNameResponse>;
 
-public sealed class GetUserByUserNameQueryHandler : IQueryHandler<GetUserByUserNameQuery, Result<GetUserByUserNameResponse>>
+public sealed class GetUserByUserNameQueryHandler : IQueryHandler<GetUserByUserNameQuery, GetUserByUserNameResponse>
 {
     private readonly ApplicationDbContext _dbContext;
     public GetUserByUserNameQueryHandler(ApplicationDbContext dbContext)

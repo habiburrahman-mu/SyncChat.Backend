@@ -1,13 +1,15 @@
-﻿namespace SyncChat.API.Shared.Sender.Contracts;
+﻿using SyncChat.API.Shared.ResultHandling;
+
+namespace SyncChat.API.Shared.Sender.Contracts;
 
 public interface IQueryHandler<TQuery>
     where TQuery : IQuery
 {
-    Task HandleAsync(TQuery query, CancellationToken cancellationToken = default);
+    Task<Result> HandleAsync(TQuery query, CancellationToken cancellationToken = default);
 }
 
 public interface IQueryHandler<TQuery, TResponse>
     where TQuery : IQuery<TResponse>
 {
-    Task<TResponse> HandleAsync(TQuery query, CancellationToken cancellationToken = default);
+    Task<Result<TResponse>> HandleAsync(TQuery query, CancellationToken cancellationToken = default);
 }

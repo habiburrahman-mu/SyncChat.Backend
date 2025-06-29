@@ -1,4 +1,5 @@
-﻿using SyncChat.API.Infrastructure.Persistence;
+﻿using FluentValidation;
+using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -10,9 +11,9 @@ public sealed record CreateConversationCommand(
     List<long> MemberIdList,
     string? Name,
     ConversationType Type,
-    string InitialMessge) : ICommand<Result<long>>;
+    string InitialMessge) : ICommand<long>;
 
-public sealed class CreateConversationCommandHandler : ICommandHandler<CreateConversationCommand, Result<long>>
+public sealed class CreateConversationCommandHandler : ICommandHandler<CreateConversationCommand, long>
 {
     private readonly ApplicationDbContext _dbContext;
 
@@ -80,5 +81,15 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
         await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
         return conversation.ConversationId;
+    }
+}
+
+public sealed class CreateConversationCommandValidator : AbstractValidator<CreateConversationCommand>
+{
+    public CreateConversationCommandValidator()
+    {
+        RuleFor(x => x.InitialMessge)
+            .MinimumLength(1).WithMessage("Empty message")
+            .NotEmpty().WithMessage("Not Empty");
     }
 }
