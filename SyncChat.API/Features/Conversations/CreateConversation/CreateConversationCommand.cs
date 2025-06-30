@@ -89,7 +89,15 @@ public sealed class CreateConversationCommandValidator : AbstractValidator<Creat
     public CreateConversationCommandValidator()
     {
         RuleFor(x => x.InitialMessge)
-            .MinimumLength(1).WithMessage("Empty message")
-            .NotEmpty().WithMessage("Not Empty");
+            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.InitialMessge)} cannot be empty.");
+
+        RuleFor(x => x.MemberIdList)
+            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} cannot be empty.")
+            .Must(memberIds => memberIds.Distinct().Count() == memberIds.Count)
+                .WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} must not contain duplicate IDs.")
+            .Must(memberIds => memberIds.All(id => id > 0))
+                .WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} must contain valid user IDs greater than zero.")
+            .Must(memberIds => memberIds.Any(id => id == x.CreatedBy))
+                .WithMessage($"{nameof(CreateConversationCommand.CreatedBy)} must be included in {nameof(CreateConversationCommand.MemberIdList)}.");
     }
 }
