@@ -97,7 +97,16 @@ public sealed class CreateConversationCommandValidator : AbstractValidator<Creat
                 .WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} must not contain duplicate IDs.")
             .Must(memberIds => memberIds.All(id => id > 0))
                 .WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} must contain valid user IDs greater than zero.")
-            .Must(memberIds => memberIds.Any(id => id == x.CreatedBy))
+            .Must((x, memberIds) => memberIds.Any(id => id == x.CreatedBy))
                 .WithMessage($"{nameof(CreateConversationCommand.CreatedBy)} must be included in {nameof(CreateConversationCommand.MemberIdList)}.");
+
+        RuleFor(x => x.Type)
+            .IsInEnum().WithMessage($"{nameof(CreateConversationCommand.Type)} must be a valid {nameof(ConversationType)} enum value.");
+
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.Name)} cannot be empty.");
+
+        RuleFor(x => x.CreatedBy)
+            .GreaterThan(0).WithMessage($"{nameof(CreateConversationCommand.CreatedBy)} must be a valid user ID greater than zero.");
     }
 }
