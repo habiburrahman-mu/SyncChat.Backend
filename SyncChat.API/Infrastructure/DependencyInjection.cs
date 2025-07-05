@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Npgsql;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Configuration;
@@ -87,7 +85,7 @@ public static class DependencyInjection
 
     private static IServiceCollection AddIdentityServicesInternal(this IServiceCollection services)
     {
-        services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddHttpContextAccessor();
         services.AddScoped<IIdentityService, IdentityService>();
         
         return services;

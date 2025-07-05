@@ -20,7 +20,7 @@ public class IdentityService : IIdentityService
 
     public long GetUserID()
     {
-        var name = User.Identity?.Name ?? string.Empty;
+        var name = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return long.TryParse(name, out var id) ? id : 0;
     }
 }

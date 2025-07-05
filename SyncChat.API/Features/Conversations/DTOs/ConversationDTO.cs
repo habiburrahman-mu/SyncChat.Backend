@@ -38,4 +38,21 @@ public static class ConversationExtensions
             Settings = conversation.Settings
         };
     }
+
+    public static List<ConversationDTO> ToDTOs(this List<Conversation> conversations)
+    {
+        return conversations
+                .Select(c =>
+                {
+                    var dto = c.ToDTO();
+                    if (dto != null && c.LastMessage != null)
+                    {
+                        dto.LastMessage = c.LastMessage.Content;
+                    }
+                    return dto;
+                })
+                .Where(dto => dto != null)
+                .Cast<ConversationDTO>()
+                .ToList();
+    }
 }
