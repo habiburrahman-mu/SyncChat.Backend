@@ -28,43 +28,42 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
 
         if (userId > 0)
         {
-            List<Conversation> conversations = await dbContext.ConversationMembers
+            var dtos = await dbContext.ConversationMembers
+                .AsNoTracking()
                 .Where(cm => cm.UserId == userId && cm.IsActive)
-                .Include(cm => cm.Conversation)
-                .ThenInclude(c => c.LastMessage)
-                .OrderByDescending(x =>
-                    x.Conversation.LastMessage != null ? x.Conversation.LastMessage!.UpdatedAt : x.Conversation.UpdatedAt)
-                .Select(cm => cm.Conversation)
-                .ToListAsync(cancellationToken);
-
-            List<long> directConversationIds = conversations
-                .Where(x => x.Type == ConversationType.Direct)
-                .Select(x => x.ConversationId)
-                .ToList();
-
-            var conversationNames = await dbContext
-                .ConversationMembers
-                .Where(x => x.UserId != userId && directConversationIds.Contains(x.ConversationId))
-                .Include(x => x.User)
-                .Select(x => new { ConversationID = x.ConversationId, Name = x.User.Name })
-                .ToListAsync(cancellationToken);
-
-            List<ConversationDTO> conversationDTOs = conversations.ToDTOs();
-
-            conversationDTOs.ForEach(conv =>
-            {
-                if (conv.Type == ConversationType.Direct)
+                .OrderByDescending(cm =>
+                     cm.Conversation.LastMessage != null
+                        ? cm.Conversation.LastMessage.UpdatedAt
+                        : cm.Conversation.UpdatedAt)
+                .Select(cm => new ConversationDTO
                 {
-                    var name = conversationNames.Find(x => x.ConversationID == conv.ConversationId)?.Name;
+                    ConversationId = cm.ConversationId,
+                    Uuid = cm.Conversation.Uuid,
+                    Type = cm.Conversation.Type,
+                    AvatarUrl = cm.Conversation.AvatarUrl,
+                    Settings = cm.Conversation.Settings,
+                    CreatedBy = cm.Conversation.CreatedBy,
+                    CreatedAt = cm.Conversation.CreatedAt,
+                    UpdatedAt = cm.Conversation.UpdatedAt,
 
-                    if (name is not null)
-                    {
-                        conv.Name = name;
-                    }
-                }
-            });
+                    // get last message text or empty
+                    LastMessageId = cm.Conversation.LastMessageId,
+                    LastMessage = cm.Conversation.LastMessage != null
+                                        ? cm.Conversation.LastMessage.Content
+                                        : null,
 
-            return new GetConversationsResponse(conversationDTOs);
+                    // for direct chats, pick the OTHER member's name; else keep existing name
+                    Name = cm.Conversation.Type == ConversationType.Direct
+                        ? cm.Conversation.Members
+                            .Where(m => m.UserId != userId)
+                            .Select(m => m.User.Name)
+                            .FirstOrDefault()
+                        : cm.Conversation.Name
+                })
+                .ToListAsync(cancellationToken);
+
+
+            return new GetConversationsResponse(dtos);
         }
 
         return Result.Failure<GetConversationsResponse>(ConversationErrors.InvalidUser(userId));
