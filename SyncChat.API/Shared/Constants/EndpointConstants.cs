@@ -26,7 +26,7 @@ public class EndpointConstants
     public static class ConversationRoute
     {
         public const string Base = "conversation";
-        public const string GetConversations = "/getConversations";
+        public const string GetList = "/getList";
         //public const string GetById = "/getById";
         public const string Create = "/create";
         //public const string UpdateConversation = "/update";

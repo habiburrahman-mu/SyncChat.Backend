@@ -9,7 +9,7 @@ public sealed class GetConversationsEndpoint : IConversationEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(ConversationRoute.GetConversations,
+        group.MapGet(ConversationRoute.GetList,
             async (IQuerySender sender, CancellationToken cancellationToken) =>
             {
                 GetConversationsQuery query = new();

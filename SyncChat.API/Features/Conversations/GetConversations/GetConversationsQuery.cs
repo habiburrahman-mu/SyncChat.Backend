@@ -32,10 +32,37 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                 .Where(cm => cm.UserId == userId && cm.IsActive)
                 .Include(cm => cm.Conversation)
                 .ThenInclude(c => c.LastMessage)
+                .OrderByDescending(x =>
+                    x.Conversation.LastMessage != null ? x.Conversation.LastMessage!.UpdatedAt : x.Conversation.UpdatedAt)
                 .Select(cm => cm.Conversation)
                 .ToListAsync(cancellationToken);
 
+            List<long> directConversationIds = conversations
+                .Where(x => x.Type == ConversationType.Direct)
+                .Select(x => x.ConversationId)
+                .ToList();
+
+            var conversationNames = await dbContext
+                .ConversationMembers
+                .Where(x => x.UserId != userId && directConversationIds.Contains(x.ConversationId))
+                .Include(x => x.User)
+                .Select(x => new { ConversationID = x.ConversationId, Name = x.User.Name })
+                .ToListAsync(cancellationToken);
+
             List<ConversationDTO> conversationDTOs = conversations.ToDTOs();
+
+            conversationDTOs.ForEach(conv =>
+            {
+                if (conv.Type == ConversationType.Direct)
+                {
+                    var name = conversationNames.Find(x => x.ConversationID == conv.ConversationId)?.Name;
+
+                    if (name is not null)
+                    {
+                        conv.Name = name;
+                    }
+                }
+            });
 
             return new GetConversationsResponse(conversationDTOs);
         }

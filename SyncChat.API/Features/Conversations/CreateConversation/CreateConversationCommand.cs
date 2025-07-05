@@ -104,7 +104,8 @@ public sealed class CreateConversationCommandValidator : AbstractValidator<Creat
             .IsInEnum().WithMessage($"{nameof(CreateConversationCommand.Type)} must be a valid {nameof(ConversationType)} enum value.");
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.Name)} cannot be empty.");
+            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.Name)} cannot be empty.")
+            .When(x => x.Type == ConversationType.Group);
 
         RuleFor(x => x.CreatedBy)
             .GreaterThan(0).WithMessage($"{nameof(CreateConversationCommand.CreatedBy)} must be a valid user ID greater than zero.");
