@@ -21,7 +21,8 @@ public static class DependencyInjection
         IOptions<JWTSettings> jwtOptions) =>
             services.AddAuthenticationInternal(jwtOptions.Value)
                     .AddPersistence(configuration)
-                    .AddOpenApiInternal();
+                    .AddOpenApiInternal()
+                    .AddIdentityServicesInternal();
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -81,6 +82,14 @@ public static class DependencyInjection
             options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
         });
 
+        return services;
+    }
+
+    private static IServiceCollection AddIdentityServicesInternal(this IServiceCollection services)
+    {
+        services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        
         return services;
     }
 }
