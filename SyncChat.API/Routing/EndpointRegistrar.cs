@@ -27,6 +27,11 @@ public static class EndpointRegistrar
                 group.WithTags(prefixAttribute.GroupName);
             }
 
+            if(prefixAttribute.HasAuthorization)
+            {
+                group.RequireAuthorization();
+            }
+
             List<Type> implementations = assemblies
                 .SelectMany(a => a.GetTypes())
                 .Where(t => endpointInterface.IsAssignableFrom(t) &&
