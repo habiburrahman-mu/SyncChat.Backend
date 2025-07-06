@@ -58,7 +58,15 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                             .Where(m => m.UserId != userId)
                             .Select(m => m.User.Name)
                             .FirstOrDefault()
-                        : cm.Conversation.Name)!
+                        : cm.Conversation.Name)!,
+
+                    OtherUserId = cm.Conversation.Type == ConversationType.Direct
+                        ? cm.Conversation.Members
+                              .Where(m => m.UserId != userId)
+                              .Select(m => m.UserId)
+                              .FirstOrDefault()
+                        : null
+
                 })
                 .ToListAsync(cancellationToken);
 

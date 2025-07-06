@@ -15,6 +15,8 @@ public class ConversationDTO
     public long? LastMessageId { get; set; }
     public string Settings { get; set; } = "{}";
     public string? LastMessage { get; set; } = string.Empty;
+    public long? OtherUserId { get; set; }
+
 }
 
 public static class ConversationExtensions
