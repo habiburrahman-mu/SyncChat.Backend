@@ -7,7 +7,7 @@ public class ConversationDTO
     public long ConversationId { get; set; }
     public Guid Uuid { get; set; } = Guid.NewGuid();
     public ConversationType Type { get; set; }
-    public string? Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public long? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -29,7 +29,7 @@ public static class ConversationExtensions
             ConversationId = conversation.ConversationId,
             Uuid = conversation.Uuid,
             Type = conversation.Type,
-            Name = conversation.Name,
+            Name = conversation.Name ?? string.Empty,
             AvatarUrl = conversation.AvatarUrl,
             CreatedBy = conversation.CreatedBy,
             CreatedAt = conversation.CreatedAt,

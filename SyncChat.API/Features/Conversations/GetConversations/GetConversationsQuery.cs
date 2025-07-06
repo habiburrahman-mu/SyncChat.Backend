@@ -53,12 +53,12 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                                         : null,
 
                     // for direct chats, pick the OTHER member's name; else keep existing name
-                    Name = cm.Conversation.Type == ConversationType.Direct
+                    Name = (cm.Conversation.Type == ConversationType.Direct
                         ? cm.Conversation.Members
                             .Where(m => m.UserId != userId)
                             .Select(m => m.User.Name)
                             .FirstOrDefault()
-                        : cm.Conversation.Name
+                        : cm.Conversation.Name)!
                 })
                 .ToListAsync(cancellationToken);
 
