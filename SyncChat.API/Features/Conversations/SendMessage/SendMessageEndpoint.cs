@@ -1,5 +1,4 @@
-﻿
-using static SyncChat.API.Shared.Constants.EndpointConstants;
+﻿using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.Conversations.SendMessage;
 

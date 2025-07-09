@@ -28,6 +28,7 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
 
         if (userId > 0)
         {
+
             var dtos = await dbContext.ConversationMembers
                 .AsNoTracking()
                 .Where(cm => cm.UserId == userId && cm.IsActive)

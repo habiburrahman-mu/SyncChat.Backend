@@ -32,4 +32,11 @@ public class EndpointConstants
         //public const string UpdateConversation = "/update";
         //public const string DeleteConversation = "/delete";
     }
+
+    public static class MessageRoute
+    {
+        public const string Base = "message";
+        public const string Get = "/get";
+        public const string Send = "/send";
+    }
 }
