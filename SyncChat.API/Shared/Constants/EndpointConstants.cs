@@ -36,7 +36,7 @@ public class EndpointConstants
     public static class MessageRoute
     {
         public const string Base = "message";
-        public const string Get = "/get";
+        public const string GetList = "/getList";
         public const string Send = "/send";
     }
 }
