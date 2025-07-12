@@ -9,7 +9,7 @@ public class GetMessagesEndpoint : IMessageEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(MessageRoute.GetList + "{id}",
+        group.MapGet(MessageRoute.GetList + "/{id}",
             async (long id, IQuerySender querySender, CancellationToken cancellationToken) =>
             {
                 GetMessagesQuery query = new(ConversationID: id);
