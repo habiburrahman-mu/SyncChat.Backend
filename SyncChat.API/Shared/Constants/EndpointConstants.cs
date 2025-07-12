@@ -27,10 +27,7 @@ public class EndpointConstants
     {
         public const string Base = "conversation";
         public const string GetList = "/getList";
-        //public const string GetById = "/getById";
         public const string Create = "/create";
-        //public const string UpdateConversation = "/update";
-        //public const string DeleteConversation = "/delete";
     }
 
     public static class MessageRoute
