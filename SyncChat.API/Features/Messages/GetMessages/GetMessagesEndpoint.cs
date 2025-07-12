@@ -1,5 +1,4 @@
-﻿
-using SyncChat.API.Shared.ResultHandling;
+﻿using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -17,6 +16,9 @@ public class GetMessagesEndpoint : IMessageEndpoint
                 Result<GetMessagesResponse> result = await querySender.SendAsync(query, cancellationToken);
 
                 return result.Match(Results.Ok, CustomResults.Problem);
-            });
+            })
+            .WithSummary("Get Messages")
+            .Produces<GetMessagesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 }
