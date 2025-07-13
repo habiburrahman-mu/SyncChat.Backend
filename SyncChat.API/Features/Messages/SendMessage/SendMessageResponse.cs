@@ -9,5 +9,7 @@ public sealed record SendMessageResponse(
     long SenderId,
     MessageType Type,
     string? Content,
+    string SenderUserName,
+    string SenderByName,
     string MetaData = "{}",
     long? ReplyTo = null);

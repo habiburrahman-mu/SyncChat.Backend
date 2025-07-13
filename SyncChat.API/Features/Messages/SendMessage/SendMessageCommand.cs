@@ -36,6 +36,10 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             ReplyTo = command.ReplyTo,
         };
 
+        User sender = await dbContext.Users
+            .AsNoTracking()
+            .FirstAsync(u => u.UserID == command.SenderId, cancellationToken);
+
         await dbContext.Messages.AddAsync(message, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -46,6 +50,8 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             SenderId: message.SenderId,
             Type: message.Type,
             Content: message.Content,
+            SenderUserName: sender.UserName,
+            SenderByName: sender.Name,
             MetaData: message.MetaData,
             ReplyTo: message.ReplyTo);
 
