@@ -17,6 +17,8 @@ public class MessageDTO
     public long? ReplyTo { get; set; }
     public bool IsEdited { get; set; } = false;
     public DateTimeOffset? EditedAt { get; set; }
+    public string SenderUserName { get; set; } = null!;
+    public string SenderByName { get; set; } = null!;
 }
 
 public static class MessageExtensions
@@ -37,7 +39,9 @@ public static class MessageExtensions
             DeletedAt = message.DeletedAt,
             ReplyTo = message.ReplyTo,
             IsEdited = message.IsEdited,
-            EditedAt = message.EditedAt
+            EditedAt = message.EditedAt,
+            SenderByName = message.Sender?.UserName ?? string.Empty,
+            SenderUserName = message.Sender?.Name ?? string.Empty
         };
     }
 }

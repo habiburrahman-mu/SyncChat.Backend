@@ -32,6 +32,7 @@ public sealed class GetMessagesQueryHandler(ApplicationDbContext applicationDbCo
             .Where(m =>
                 m.ConversationId == query.ConversationID
                 && m.DeletedAt == null)
+            .Include(m => m.Sender)
             .Select(m => m.ToDTO())
             .ToListAsync(cancellationToken);
 

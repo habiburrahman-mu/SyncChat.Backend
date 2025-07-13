@@ -36,7 +36,7 @@ public class SendMessageEndpoint : IMessageEndpoint
                 Result<SendMessageResponse> result = await sender.SendAsync(command, cancellationToken);
 
                 return result.Match(
-                    response => Results.Created("", response.MessageId),
+                    response => Results.Created("", response),
                     CustomResults.Problem);
             })
             .WithSummary("Send Message")
