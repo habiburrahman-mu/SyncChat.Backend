@@ -36,6 +36,8 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             Content = command.Content,
             MetaData = command.MetaData,
             ReplyTo = command.ReplyTo,
+            CreatedAt= DateTimeOffset.UtcNow,
+            UpdatedAt= DateTimeOffset.UtcNow,
         };
 
         User sender = await dbContext.Users
@@ -58,6 +60,7 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             Content: message.Content,
             SenderUserName: sender.UserName,
             SenderByName: sender.Name,
+            UpdatedAt: message.UpdatedAt,
             MetaData: message.MetaData,
             ReplyTo: message.ReplyTo);
 

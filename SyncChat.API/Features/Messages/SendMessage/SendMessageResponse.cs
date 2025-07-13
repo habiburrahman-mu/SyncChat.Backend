@@ -11,5 +11,6 @@ public sealed record SendMessageResponse(
     string? Content,
     string SenderUserName,
     string SenderByName,
+    DateTimeOffset UpdatedAt,
     string MetaData = "{}",
     long? ReplyTo = null);
