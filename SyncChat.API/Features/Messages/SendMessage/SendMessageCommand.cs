@@ -25,6 +25,8 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
     }
     public async Task<Result<SendMessageResponse>> HandleAsync(SendMessageCommand command, CancellationToken cancellationToken)
     {
+        await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
         Message message = new()
         {
             Uuid = Guid.NewGuid(),
@@ -43,6 +45,10 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         await dbContext.Messages.AddAsync(message, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        await dbContext.Conversations
+            .Where(c => c.ConversationId == command.ConversationId)
+            .ExecuteUpdateAsync(c => c.SetProperty(p => p.LastMessageId, message.MessageId), cancellationToken);
+
         SendMessageResponse response = new(
             MessageId: message.MessageId,
             Uuid: message.Uuid,
@@ -54,6 +60,8 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             SenderByName: sender.Name,
             MetaData: message.MetaData,
             ReplyTo: message.ReplyTo);
+
+        await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
         return response;
     }
