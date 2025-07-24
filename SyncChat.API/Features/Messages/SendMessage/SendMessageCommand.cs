@@ -1,5 +1,8 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using SyncChat.API.Features.Messages.DTOs;
+using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
@@ -18,10 +21,12 @@ public sealed record SendMessageCommand(
 public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageCommand, SendMessageResponse>
 {
     private readonly ApplicationDbContext dbContext;
+    private readonly IHubContext<NotificationHub, INotificationClient> hub;
 
-    public SendMessageCommandHandler(ApplicationDbContext applicationDbContext)
+    public SendMessageCommandHandler(ApplicationDbContext applicationDbContext, IHubContext<NotificationHub, INotificationClient> hub)
     {
         dbContext = applicationDbContext;
+        this.hub = hub;
     }
     public async Task<Result<SendMessageResponse>> HandleAsync(SendMessageCommand command, CancellationToken cancellationToken)
     {
@@ -66,7 +71,15 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 
         await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
+        await SendNotification(message);
+
         return response;
+    }
+
+    private async Task SendNotification(Message message)
+    {
+        await this.hub.Clients.Group(message.ConversationId.ToString())
+            .ReceiveMessage(message.ToDTO());
     }
 }
 

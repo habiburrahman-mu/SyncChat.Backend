@@ -71,9 +71,13 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.MapHub<NotificationHub>("/hub/notifications");
+app.UseCors(builder => builder
+                        .WithOrigins("http://localhost:4200")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials());
 
-app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+app.MapHub<NotificationHub>("/hub/notifications").RequireCors();
 
 try
 {
