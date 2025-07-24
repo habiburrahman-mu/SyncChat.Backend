@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
+using SyncChat.API.Features.Notifications;
 using SyncChat.API.Host;
 using SyncChat.API.Infrastructure;
 using SyncChat.API.Infrastructure.Exceptions;
@@ -45,6 +46,8 @@ builder.Services.ConfigureHttpJsonOptions(opts =>
         new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -64,9 +67,11 @@ app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.Use(async (context, next) =>
 {
-    await Task.Delay(500); // 1 second delay
+    await Task.Delay(200); // 200 ms delay
     await next();
 });
+
+app.MapHub<NotificationHub>("/hub/notifications");
 
 app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
