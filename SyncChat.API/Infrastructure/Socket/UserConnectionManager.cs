@@ -1,4 +1,4 @@
-﻿using SyncChat.API.Shared.Socket;
+﻿using SyncChat.API.Shared.Socket.Contracts;
 using System.Collections.Concurrent;
 
 namespace SyncChat.API.Infrastructure.Socket;

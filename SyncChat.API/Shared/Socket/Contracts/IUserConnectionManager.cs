@@ -1,4 +1,4 @@
-﻿namespace SyncChat.API.Shared.Socket;
+﻿namespace SyncChat.API.Shared.Socket.Contracts;
 
 public interface IUserConnectionManager
 {

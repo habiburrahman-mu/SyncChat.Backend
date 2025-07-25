@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
+using SyncChat.API.Infrastructure.Socket;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Security.Contracts;
+using SyncChat.API.Shared.Socket.Contracts;
 using System.Text;
 
 namespace SyncChat.API.Infrastructure;
@@ -20,7 +23,8 @@ public static class DependencyInjection
             services.AddAuthenticationInternal(jwtOptions.Value)
                     .AddPersistence(configuration)
                     .AddOpenApiInternal()
-                    .AddIdentityServicesInternal();
+                    .AddIdentityServicesInternal()
+                    .AddSocketServicesInternal();
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -87,7 +91,14 @@ public static class DependencyInjection
     {
         services.AddHttpContextAccessor();
         services.AddScoped<IIdentityService, IdentityService>();
-        
+
+        return services;
+    }
+
+    private static IServiceCollection AddSocketServicesInternal(this IServiceCollection services)
+    {
+        services.AddSingleton<IUserConnectionManager, UserConnectionManager>();
+        services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
         return services;
     }
 }

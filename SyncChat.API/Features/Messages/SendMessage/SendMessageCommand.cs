@@ -5,6 +5,7 @@ using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
+using SyncChat.API.Shared.Notification.Contracts;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 
