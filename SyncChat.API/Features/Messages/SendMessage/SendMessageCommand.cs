@@ -5,9 +5,9 @@ using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
-using SyncChat.API.Shared.Notification.Contracts;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Socket.Contracts;
 
 namespace SyncChat.API.Features.Messages.SendMessage;
 
@@ -23,11 +23,16 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IHubContext<NotificationHub, INotificationClient> hub;
+    private readonly IUserConnectionManager userConnectionManager;
 
-    public SendMessageCommandHandler(ApplicationDbContext applicationDbContext, IHubContext<NotificationHub, INotificationClient> hub)
+    public SendMessageCommandHandler(
+        ApplicationDbContext applicationDbContext,
+        IHubContext<NotificationHub, INotificationClient> hub,
+        IUserConnectionManager userConnectionManager)
     {
         dbContext = applicationDbContext;
         this.hub = hub;
+        this.userConnectionManager = userConnectionManager;
     }
     public async Task<Result<SendMessageResponse>> HandleAsync(SendMessageCommand command, CancellationToken cancellationToken)
     {
@@ -42,8 +47,8 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
             Content = command.Content,
             MetaData = command.MetaData,
             ReplyTo = command.ReplyTo,
-            CreatedAt= DateTimeOffset.UtcNow,
-            UpdatedAt= DateTimeOffset.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
         };
 
         User sender = await dbContext.Users
@@ -79,7 +84,9 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 
     private async Task SendNotification(Message message)
     {
-        await this.hub.Clients.Group(message.ConversationId.ToString())
+        IReadOnlyList<string> sendersConnections = userConnectionManager.GetConnections(message.SenderId.ToString());
+
+        await this.hub.Clients.GroupExcept(message.ConversationId.ToString(), sendersConnections)
             .ReceiveMessage(message.ToDTO());
     }
 }

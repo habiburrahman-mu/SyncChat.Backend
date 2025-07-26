@@ -2,6 +2,11 @@
 
 public class EndpointConstants
 {
+    public static class HubRoute
+    {
+        public const string NotificationHub = "/hub/notifications";
+    }
+
     public static class AuthRoute
     {
         public const string Base = "auth";

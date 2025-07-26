@@ -13,6 +13,7 @@ using SyncChat.API.Shared.Sender.Internal;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,21 @@ builder.Services.AddInfrastructure(builder.Configuration, jwtOptions);
 
 builder.Services.RegisterRequestHandlers();
 
-builder.Services.AddCors();
+//builder.Services.AddCors();
+
+const string corsPolicy = "CorsPolicy";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicy, policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -61,8 +76,6 @@ app.UseHttpsRedirection();
 
 app.UseExceptionHandler();
 
-app.UseAuthentication().UseAuthorization();
-
 app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.Use(async (context, next) =>
@@ -71,13 +84,11 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseCors(builder => builder
-                        .WithOrigins("http://localhost:4200")
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials());
+app.UseCors(corsPolicy);
 
-app.MapHub<NotificationHub>("/hub/notifications").RequireCors();
+app.UseAuthentication().UseAuthorization();
+
+app.MapHub<NotificationHub>(HubRoute.NotificationHub).RequireCors(corsPolicy);
 
 try
 {

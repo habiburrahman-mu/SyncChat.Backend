@@ -11,6 +11,7 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
 using System.Text;
+using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Infrastructure;
 
@@ -40,6 +41,25 @@ public static class DependencyInjection
                     ValidAudience = jwtSettings.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                     ClockSkew = TimeSpan.Zero
+                };
+
+                // This is for SignalR
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        // If the request is for our hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments(HubRoute.NotificationHub))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 

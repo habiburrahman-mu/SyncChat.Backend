@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Shared.Socket.Contracts;
 
@@ -9,6 +10,7 @@ public interface INotificationClient
     Task ReceiveMessage(MessageDTO message);
 }
 
+[Authorize]
 public class NotificationHub : Hub<INotificationClient>
 {
     private readonly IUserConnectionManager userConnectionManager;
@@ -20,7 +22,8 @@ public class NotificationHub : Hub<INotificationClient>
 
     public override Task OnConnectedAsync()
     {
-
+        string userId = Context.UserIdentifier ?? throw new InvalidOperationException("User identifier is not set.");
+        userConnectionManager.AddConnection(userId, Context.ConnectionId);
         return base.OnConnectedAsync();
     }
 
