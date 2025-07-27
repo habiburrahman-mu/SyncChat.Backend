@@ -84,8 +84,11 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 
     private async Task SendNotification(Message message)
     {
-        IReadOnlyList<string> sendersConnections = userConnectionManager.GetConnections(message.SenderId.ToString());
+        User? sender = await dbContext.Users.FirstOrDefaultAsync(x => x.UserID == message.SenderId);
 
+        if (sender is not null) message.Sender = sender;
+
+        IReadOnlyList<string> sendersConnections = userConnectionManager.GetConnections(message.SenderId.ToString());
         await this.hub.Clients.GroupExcept(message.ConversationId.ToString(), sendersConnections)
             .MessageReceived(message.ToDTO());
     }
