@@ -16,19 +16,22 @@ public class UserConnectionManager : IUserConnectionManager
         }
     }
 
-    public void RemoveConnection(string connectionId)
+    public void RemoveConnection(string userId, string connectionId)
     {
-        foreach (var (userId, connections) in _userConnections)
+        if (!_userConnections.TryGetValue(userId, out var connections))
+            return;
+
+        lock (connections)
         {
-            lock (connections)
+            connections.Remove(connectionId);
+
+            if (connections.Count == 0)
             {
-                if (connections.Remove(connectionId) && connections.Count == 0)
-                {
-                    _userConnections.TryRemove(userId, out _);
-                }
+                _userConnections.TryRemove(userId, out _);
             }
         }
     }
+
 
     public IReadOnlyList<string> GetConnections(string userId)
     {

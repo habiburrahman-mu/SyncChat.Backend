@@ -87,7 +87,7 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         IReadOnlyList<string> sendersConnections = userConnectionManager.GetConnections(message.SenderId.ToString());
 
         await this.hub.Clients.GroupExcept(message.ConversationId.ToString(), sendersConnections)
-            .ReceiveMessage(message.ToDTO());
+            .MessageReceived(message.ToDTO());
     }
 }
 

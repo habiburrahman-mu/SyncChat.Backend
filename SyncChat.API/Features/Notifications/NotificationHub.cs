@@ -7,7 +7,10 @@ namespace SyncChat.API.Features.Notifications;
 
 public interface INotificationClient
 {
-    Task ReceiveMessage(MessageDTO message);
+    /// <summary>
+    /// Called by the server when a new message is received in the chat.
+    /// </summary>
+    Task MessageReceived(MessageDTO message);
 }
 
 [Authorize]
@@ -35,5 +38,12 @@ public class NotificationHub : Hub<INotificationClient>
     public async Task LeaveGroup(string groupName)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        string userId = Context.UserIdentifier ?? throw new InvalidOperationException("User identifier is not set.");
+        userConnectionManager.RemoveConnection(userId, Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
     }
 }
