@@ -1,4 +1,5 @@
-﻿using SyncChat.API.Shared.ResultHandling;
+﻿using Microsoft.AspNetCore.Mvc;
+using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -9,9 +10,12 @@ public class GetMessagesEndpoint : IMessageEndpoint
     public void Map(RouteGroupBuilder group)
     {
         group.MapGet(MessageRoute.GetList + "/{id}",
-            async (long id, IQuerySender querySender, CancellationToken cancellationToken) =>
+            async ([FromRoute] long id, [FromQuery] long? lastMessageId, [FromQuery] int pageSize, IQuerySender querySender, CancellationToken cancellationToken) =>
             {
-                GetMessagesQuery query = new(ConversationID: id);
+                GetMessagesQuery query = new(
+                    ConversationID: id,
+                    LastMessageID: lastMessageId,
+                    PageSize: pageSize);
 
                 Result<GetMessagesResponse> result = await querySender.SendAsync(query, cancellationToken);
 

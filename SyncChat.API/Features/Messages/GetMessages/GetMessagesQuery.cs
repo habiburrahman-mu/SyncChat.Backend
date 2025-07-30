@@ -9,7 +9,10 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Messages.GetMessages;
 
-public sealed record GetMessagesQuery(long ConversationID)
+public sealed record GetMessagesQuery(
+    long ConversationID,
+    long? LastMessageID = null,
+    int PageSize = 20)
     : IQuery<GetMessagesResponse>;
 
 public sealed class GetMessagesQueryHandler(ApplicationDbContext applicationDbContext, IIdentityService identityService)
@@ -27,15 +30,32 @@ public sealed class GetMessagesQueryHandler(ApplicationDbContext applicationDbCo
         if (!isMember)
             return Result.Failure<GetMessagesResponse>(ConversationErrors.NotAuthorized(query.ConversationID));
 
+        var messagesQuery = applicationDbContext.Messages
+            .Where(m => m.ConversationId == query.ConversationID && m.DeletedAt == null);
 
-        List<MessageDTO> conversations = await applicationDbContext.Messages
-            .Where(m =>
-                m.ConversationId == query.ConversationID
-                && m.DeletedAt == null)
+        // Pagination filter: only older messages
+        if (query.LastMessageID.HasValue)
+        {
+            messagesQuery = messagesQuery.Where(m => m.MessageId < query.LastMessageID.Value);
+        }
+
+        var messages = await messagesQuery
+            .OrderByDescending(m => m.MessageId)
             .Include(m => m.Sender)
+            .Take(query.PageSize)
             .Select(m => m.ToDTO())
             .ToListAsync(cancellationToken);
 
-        return new GetMessagesResponse(conversations);
+        messages.Reverse();
+
+        //List<MessageDTO> conversations = await applicationDbContext.Messages
+        //    .Where(m =>
+        //        m.ConversationId == query.ConversationID
+        //        && m.DeletedAt == null)
+        //    .Include(m => m.Sender)
+        //    .Select(m => m.ToDTO())
+        //    .ToListAsync(cancellationToken);
+
+        return new GetMessagesResponse(messages);
     }
 }
