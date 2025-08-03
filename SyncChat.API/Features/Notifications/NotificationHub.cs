@@ -13,6 +13,8 @@ public interface INotificationClient
     /// Called by the server when a new message is received in the chat.
     /// </summary>
     Task MessageReceived(MessageDTO message);
+
+    Task HasNewMessage(long conversationId);
 }
 
 [Authorize]
