@@ -11,4 +11,8 @@ public static class ConversationErrors
     public static Error NotAuthorized(long conversationId) => Error.Validation(
         "Conversation.NotAuthorized",
         $"You are not authorized to perform this action on the conversation with Id = '{conversationId}'.");
+
+    public static Error LastMessageNotFound(long conversationId) => Error.NotFound(
+        "Conversation.LastMessageNotFound",
+        $"Last message not found for conversation Id = {conversationId}.");
 }
