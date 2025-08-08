@@ -1,5 +1,9 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.SignalR;
+using SyncChat.API.Features.Conversations.DTOs;
+using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -16,10 +20,14 @@ public sealed record CreateConversationCommand(
 public sealed class CreateConversationCommandHandler : ICommandHandler<CreateConversationCommand, long>
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IHubContext<NotificationHub, INotificationClient> _hub;
+    private readonly IIdentityService _identityService;
 
-    public CreateConversationCommandHandler(ApplicationDbContext dbContext)
+    public CreateConversationCommandHandler(ApplicationDbContext dbContext, IHubContext<NotificationHub, INotificationClient> hub, IIdentityService identityService)
     {
         _dbContext = dbContext;
+        _hub = hub;
+        _identityService = identityService;
     }
 
     public async Task<Result<long>> HandleAsync(CreateConversationCommand command, CancellationToken cancellationToken = default)
@@ -80,7 +88,25 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
         await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
+        await SendNotificationAsync(command, conversation, cancellationToken);
+
         return conversation.ConversationId;
+    }
+
+    private async Task SendNotificationAsync(CreateConversationCommand command, Conversation conversation, CancellationToken cancellationToken)
+    {
+        List<long> memberList = command.MemberIdList
+                                .Where(memberId => memberId != _identityService.GetUserID())
+                                .ToList();
+
+        ConversationDTO conversationDTO = conversation.ToDTO()!;
+        conversationDTO.LastMessage = command.InitialMessge;
+        conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? memberList.First() : null;
+
+        var notificationTasks = memberList
+            .Select(userId => this._hub.Clients.User(userId.ToString()).NewConversationCreated(conversationDTO));
+
+        await Task.WhenAll(notificationTasks);
     }
 }
 

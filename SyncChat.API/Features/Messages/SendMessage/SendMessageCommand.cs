@@ -77,12 +77,12 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 
         await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
-        await SendNotification(message, cancellationToken);
+        await SendNotificationAsync(message, cancellationToken);
 
         return response;
     }
 
-    private async Task SendNotification(Message message, CancellationToken cancellationToken)
+    private async Task SendNotificationAsync(Message message, CancellationToken cancellationToken)
     {
         User? sender = await dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == message.SenderId, cancellationToken);
 
