@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Socket.Contracts;
@@ -15,6 +16,11 @@ public interface INotificationClient
     Task MessageReceived(MessageDTO message);
 
     Task HasNewMessage(long conversationId);
+
+    /// <summary>
+    /// Called by the server when a new conversation is created or added for the client.
+    /// </summary>
+    Task NewConversationCreated(ConversationDTO conversation);
 }
 
 [Authorize]

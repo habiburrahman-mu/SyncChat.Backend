@@ -93,12 +93,16 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         await this.hub.Clients.GroupExcept(message.ConversationId.ToString(), sendersConnections)
             .MessageReceived(message.ToDTO());
 
-        List<long> conversationMembers = await dbContext.ConversationMembers.AsNoTracking().Where(x => x.ConversationId == message.ConversationId && x.UserId != message.SenderId).Select(x => x.UserId).ToListAsync(cancellationToken);
+        List<long> conversationMembers = await dbContext.ConversationMembers
+            .AsNoTracking()
+            .Where(x => x.ConversationId == message.ConversationId
+                        && x.UserId != message.SenderId)
+            .Select(x => x.UserId)
+            .ToListAsync(cancellationToken);
 
-        foreach (long userId in conversationMembers)
-        {
-            await this.hub.Clients.User(userId.ToString()).HasNewMessage(message.ConversationId);
-        }
+        var notificationTasks = conversationMembers.Select(userId => this.hub.Clients.User(userId.ToString()).HasNewMessage(message.ConversationId));
+
+        await Task.WhenAll(notificationTasks);
     }
 }
 
