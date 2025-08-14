@@ -101,7 +101,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
                                 .ToList();
 
         ConversationDTO conversationDTO = conversation.ToDTO()!;
-        conversationDTO.LastMessage = command.InitialMessge;
+        //conversationDTO.LastMessage = command.InitialMessge;
         conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? memberList.First() : null;
 
         var notificationTasks = memberList
@@ -115,8 +115,8 @@ public sealed class CreateConversationCommandValidator : AbstractValidator<Creat
 {
     public CreateConversationCommandValidator()
     {
-        RuleFor(x => x.InitialMessge)
-            .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.InitialMessge)} cannot be empty.");
+        //RuleFor(x => x.InitialMessge)
+        //    .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.InitialMessge)} cannot be empty.");
 
         RuleFor(x => x.MemberIdList)
             .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} cannot be empty.")
