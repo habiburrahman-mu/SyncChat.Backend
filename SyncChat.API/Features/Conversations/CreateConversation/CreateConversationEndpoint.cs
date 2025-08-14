@@ -13,8 +13,7 @@ public sealed class CreateConversationEndpoint : IConversationEndpoint
         long CreatedBy,
         List<long> MemberIdList,
         string Name,
-        ConversationType Type,
-        string InitialMessage);
+        ConversationType Type);
 
     public void Map(RouteGroupBuilder group)
     {
@@ -25,8 +24,7 @@ public sealed class CreateConversationEndpoint : IConversationEndpoint
                     request.CreatedBy,
                     request.MemberIdList,
                     request.Name,
-                    request.Type,
-                    request.InitialMessage);
+                    request.Type);
 
                 Result<long> result = await sender.SendAsync(command, cancellationToken);
 

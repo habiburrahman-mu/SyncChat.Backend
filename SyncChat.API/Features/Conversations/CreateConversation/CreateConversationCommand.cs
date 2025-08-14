@@ -14,8 +14,7 @@ public sealed record CreateConversationCommand(
     long CreatedBy,
     List<long> MemberIdList,
     string? Name,
-    ConversationType Type,
-    string InitialMessge) : ICommand<long>;
+    ConversationType Type) : ICommand<long>;
 
 public sealed class CreateConversationCommandHandler : ICommandHandler<CreateConversationCommand, long>
 {
@@ -32,7 +31,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
     public async Task<Result<long>> HandleAsync(CreateConversationCommand command, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        //await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         Conversation conversation = new()
         {
@@ -48,28 +47,28 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
         await _dbContext.Conversations.AddAsync(conversation, cancellationToken);
 
-        Message message = new()
-        {
-            Uuid = Guid.NewGuid(),
-            Conversation = conversation,
-            SenderId = command.CreatedBy,
-            Type = MessageType.Text,
-            Content = command.InitialMessge,
-            MetaData = "{}",
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
-            IsEdited = false,
-            EditedAt = null,
-        };
+        //Message message = new()
+        //{
+        //    Uuid = Guid.NewGuid(),
+        //    Conversation = conversation,
+        //    SenderId = command.CreatedBy,
+        //    Type = MessageType.Text,
+        //    Content = command.InitialMessge,
+        //    MetaData = "{}",
+        //    CreatedAt = DateTimeOffset.UtcNow,
+        //    UpdatedAt = DateTimeOffset.UtcNow,
+        //    IsEdited = false,
+        //    EditedAt = null,
+        //};
 
-        await _dbContext.Messages.AddAsync(message, cancellationToken);
+        //await _dbContext.Messages.AddAsync(message, cancellationToken);
 
         List<ConversationMember> members = command.MemberIdList
             .Select(memberId => new ConversationMember
             {
                 Conversation = conversation,
                 UserId = memberId,
-                Role = memberId == command.CreatedBy ? MemberRole.Admin : MemberRole.Member,
+                Role = memberId == command.CreatedBy ? MemberRole.Owner : MemberRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow,
                 Settings = "{}",
                 IsActive = true
@@ -78,15 +77,17 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
         await _dbContext.ConversationMembers.AddRangeAsync(members, cancellationToken);
 
+        //await _dbContext.SaveChangesAsync(cancellationToken);
+
+        //conversation.LastMessageId = message.MessageId;
+
+        //_dbContext.Conversations.Update(conversation);
+
+        //await _dbContext.SaveChangesAsync(cancellationToken);
+
+        //await _dbContext.Database.CommitTransactionAsync(cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
-
-        conversation.LastMessageId = message.MessageId;
-
-        _dbContext.Conversations.Update(conversation);
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
         await SendNotificationAsync(command, conversation, cancellationToken);
 
