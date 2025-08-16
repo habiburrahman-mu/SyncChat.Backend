@@ -32,7 +32,6 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
     public async Task<Result<long>> HandleAsync(CreateConversationCommand command, CancellationToken cancellationToken = default)
     {
-        //await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         Conversation conversation = new()
         {
@@ -48,22 +47,6 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
         await _dbContext.Conversations.AddAsync(conversation, cancellationToken);
 
-        //Message message = new()
-        //{
-        //    Uuid = Guid.NewGuid(),
-        //    Conversation = conversation,
-        //    SenderId = command.CreatedBy,
-        //    Type = MessageType.Text,
-        //    Content = command.InitialMessge,
-        //    MetaData = "{}",
-        //    CreatedAt = DateTimeOffset.UtcNow,
-        //    UpdatedAt = DateTimeOffset.UtcNow,
-        //    IsEdited = false,
-        //    EditedAt = null,
-        //};
-
-        //await _dbContext.Messages.AddAsync(message, cancellationToken);
-
         List<ConversationMember> members = command.MemberIdList
             .Select(memberId => new ConversationMember
             {
@@ -77,16 +60,6 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
             .ToList();
 
         await _dbContext.ConversationMembers.AddRangeAsync(members, cancellationToken);
-
-        //await _dbContext.SaveChangesAsync(cancellationToken);
-
-        //conversation.LastMessageId = message.MessageId;
-
-        //_dbContext.Conversations.Update(conversation);
-
-        //await _dbContext.SaveChangesAsync(cancellationToken);
-
-        //await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -104,7 +77,6 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
                                 .ToList();
 
         ConversationDTO conversationDTO = conversation.ToDTO()!;
-        //conversationDTO.LastMessage = command.InitialMessge;
         conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? memberList.First() : null;
 
         if (conversation.Type == ConversationType.Direct)
@@ -127,9 +99,6 @@ public sealed class CreateConversationCommandValidator : AbstractValidator<Creat
 {
     public CreateConversationCommandValidator()
     {
-        //RuleFor(x => x.InitialMessge)
-        //    .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.InitialMessge)} cannot be empty.");
-
         RuleFor(x => x.MemberIdList)
             .NotEmpty().WithMessage($"{nameof(CreateConversationCommand.MemberIdList)} cannot be empty.")
             .Must(memberIds => memberIds.Distinct().Count() == memberIds.Count)
