@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
@@ -96,13 +97,24 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
     private async Task SendNotificationAsync(CreateConversationCommand command, Conversation conversation, CancellationToken cancellationToken)
     {
+        long currentUserId = _identityService.GetUserID();
+
         List<long> memberList = command.MemberIdList
-                                .Where(memberId => memberId != _identityService.GetUserID())
+                                .Where(memberId => memberId != currentUserId)
                                 .ToList();
 
         ConversationDTO conversationDTO = conversation.ToDTO()!;
         //conversationDTO.LastMessage = command.InitialMessge;
         conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? memberList.First() : null;
+
+        if (conversation.Type == ConversationType.Direct)
+        {
+            conversationDTO.Name = await _dbContext
+                .Users
+                .Where(x => x.UserID == currentUserId)
+                .Select(x => x.Name)
+                .FirstAsync(cancellationToken);
+        }
 
         var notificationTasks = memberList
             .Select(userId => this._hub.Clients.User(userId.ToString()).NewConversationCreated(conversationDTO));
