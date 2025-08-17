@@ -8,6 +8,7 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SyncChat.API.Features.Messages.SendMessage;
 
@@ -38,29 +39,16 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
     {
         await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        Message message = new()
-        {
-            Uuid = Guid.NewGuid(),
-            ConversationId = command.ConversationId,
-            SenderId = command.SenderId,
-            Type = command.Type,
-            Content = command.Content,
-            MetaData = command.MetaData,
-            ReplyTo = command.ReplyTo,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
-        };
+        Message message = await SaveMessageAsync(command, cancellationToken);
+
+        // Update last message reference
+        await dbContext.Conversations
+            .Where(c => c.ConversationId == command.ConversationId)
+            .ExecuteUpdateAsync(c => c.SetProperty(p => p.LastMessageId, message.MessageId), cancellationToken);
 
         User sender = await dbContext.Users
             .AsNoTracking()
             .FirstAsync(u => u.UserID == command.SenderId, cancellationToken);
-
-        await dbContext.Messages.AddAsync(message, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await dbContext.Conversations
-            .Where(c => c.ConversationId == command.ConversationId)
-            .ExecuteUpdateAsync(c => c.SetProperty(p => p.LastMessageId, message.MessageId), cancellationToken);
 
         SendMessageResponse response = new(
             MessageId: message.MessageId,
@@ -82,6 +70,35 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         return response;
     }
 
+    private async Task<Message> SaveMessageAsync(SendMessageCommand command, CancellationToken cancellationToken)
+    {
+        Message message = new()
+        {
+            Uuid = Guid.NewGuid(),
+            ConversationId = command.ConversationId,
+            SenderId = command.SenderId,
+            Type = command.Type,
+            Content = command.Content,
+            MetaData = command.MetaData,
+            ReplyTo = command.ReplyTo,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+
+        await dbContext.Messages.AddAsync(message, cancellationToken);
+
+        await dbContext.MessageStatuses.AddAsync(new MessageStatus
+        {
+            Message = message,
+            UserId = message.SenderId,
+            Status = DeliveryStatus.Sent,
+            UpdatedAt = DateTime.UtcNow,
+        });
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return message;
+    }
+
     private async Task SendNotificationAsync(Message message, CancellationToken cancellationToken)
     {
         User? sender = await dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == message.SenderId, cancellationToken);
@@ -96,6 +113,7 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         List<long> conversationMembers = await dbContext.ConversationMembers
             .AsNoTracking()
             .Where(x => x.ConversationId == message.ConversationId
+                    && x.IsActive && x.LeftAt == null
                         && x.UserId != message.SenderId)
             .Select(x => x.UserId)
             .ToListAsync(cancellationToken);
