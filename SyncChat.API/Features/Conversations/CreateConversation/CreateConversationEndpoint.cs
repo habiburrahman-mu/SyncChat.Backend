@@ -33,7 +33,6 @@ public sealed class CreateConversationEndpoint : IConversationEndpoint
                     CustomResults.Problem);
             })
             .WithSummary("Create Conversation")
-            .RequireAuthorization()
             .Produces<Guid>(StatusCodes.Status201Created);
     }
 }
