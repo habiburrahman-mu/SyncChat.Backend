@@ -29,5 +29,10 @@ public class ConversationMemberConfiguration : IEntityTypeConfiguration<Conversa
             .WithMany()
             .HasForeignKey(cm => cm.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(cm => cm.LastSeenMessage)
+            .WithMany()
+            .HasForeignKey(cm => cm.LastSeenMessageId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

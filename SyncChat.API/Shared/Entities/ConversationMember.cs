@@ -10,10 +10,12 @@ public class ConversationMember
     public DateTimeOffset? LeftAt { get; set; }
     public string Settings { get; set; } = "{}";
     public bool IsActive { get; set; } = true;
+    public long? LastSeenMessageId { get; set; }
 
     // Navigation
     public Conversation Conversation { get; set; } = default!;
     public User User { get; set; } = default!;
+    public Message? LastSeenMessage { get; set; }
 }
 
 public enum MemberRole { Member, Admin, Owner }
