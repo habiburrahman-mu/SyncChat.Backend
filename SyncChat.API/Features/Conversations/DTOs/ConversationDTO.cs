@@ -16,7 +16,8 @@ public class ConversationDTO
     public string Settings { get; set; } = "{}";
     public string? LastMessage { get; set; } = string.Empty;
     public long? OtherUserId { get; set; }
-
+    public long? LastSeenMessageId { get; set; }
+    public bool HaveUnreadMessages { get; set; }
 }
 
 public static class ConversationExtensions

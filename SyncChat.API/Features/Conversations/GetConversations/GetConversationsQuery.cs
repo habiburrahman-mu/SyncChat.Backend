@@ -66,8 +66,11 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                               .Where(m => m.UserId != userId)
                               .Select(m => m.UserId)
                               .FirstOrDefault()
-                        : null
+                        : null,
 
+                    LastSeenMessageId = cm.LastSeenMessageId,
+
+                    HaveUnreadMessages = cm.Conversation.LastMessageId != null ? (cm.LastSeenMessageId ?? 0) < cm.Conversation.LastMessageId : false
                 })
                 .ToListAsync(cancellationToken);
 
