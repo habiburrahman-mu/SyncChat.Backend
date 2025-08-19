@@ -7,7 +7,6 @@ namespace SyncChat.API.Features.Conversations.MarkMessageAsSeen;
 
 public sealed record MarkMessageAsSeenRequest(
         long ConversationId,
-        long UserId,
         long MessageId);
 
 public sealed class MarkMessageAsSeenEndpoint : IConversationEndpoint
@@ -19,7 +18,6 @@ public sealed class MarkMessageAsSeenEndpoint : IConversationEndpoint
             {
                 MarkMessageAsSeenCommand command = new(
                     request.ConversationId,
-                    request.UserId,
                     request.MessageId);
 
                 Result result = await sender.SendAsync(command, cancellationToken);
