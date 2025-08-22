@@ -21,6 +21,8 @@ public interface INotificationClient
     /// Called by the server when a new conversation is created or added for the client.
     /// </summary>
     Task NewConversationCreated(ConversationDTO conversation);
+
+    Task Typing(TypingEvent typingEvent);
 }
 
 [Authorize]
@@ -59,6 +61,19 @@ public class NotificationHub : Hub<INotificationClient>
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
     }
 
+    public async Task Typing(string groupName)
+    {
+        string userIdString = Context.UserIdentifier ?? throw new InvalidOperationException("User identifier is not set.");
+
+        if (!long.TryParse(groupName, out long groupId)) return;
+
+        if (!long.TryParse(userIdString, out long userId)) return;
+
+        IReadOnlyCollection<string> currentUserConnections = userConnectionManager.GetConnections(userIdString);
+
+        await Clients.GroupExcept(groupName, currentUserConnections).Typing(new TypingEvent(groupId, userId));
+    }
+
     public async Task LeaveGroup(string groupName)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
@@ -77,3 +92,7 @@ public class NotificationHub : Hub<INotificationClient>
             .AnyAsync(cm => cm.ConversationId == conversationId && cm.UserId == userId);
     }
 }
+
+public sealed record TypingEvent(
+    long ConversationId,
+    long UserId);
