@@ -22,7 +22,9 @@ public interface INotificationClient
     /// </summary>
     Task NewConversationCreated(ConversationDTO conversation);
 
-    Task Typing(TypingEvent typingEvent);
+    Task TypingStarted(TypingEvent typingEvent);
+
+    Task TypingStopped(TypingEvent typingEvent);
 }
 
 [Authorize]
@@ -61,7 +63,7 @@ public class NotificationHub : Hub<INotificationClient>
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
     }
 
-    public async Task Typing(string groupName)
+    public async Task TypingStarted(string groupName)
     {
         string userIdString = Context.UserIdentifier ?? throw new InvalidOperationException("User identifier is not set.");
 
@@ -71,7 +73,22 @@ public class NotificationHub : Hub<INotificationClient>
 
         IReadOnlyCollection<string> currentUserConnections = userConnectionManager.GetConnections(userIdString);
 
-        await Clients.GroupExcept(groupName, currentUserConnections).Typing(new TypingEvent(groupId, userId));
+        await Clients.GroupExcept(groupName, currentUserConnections)
+            .TypingStarted(new TypingEvent(groupId, userId));
+    }
+
+    public async Task TypingStopped(string groupName)
+    {
+        string userIdString = Context.UserIdentifier ?? throw new InvalidOperationException("User identifier is not set.");
+
+        if (!long.TryParse(groupName, out long groupId)) return;
+
+        if (!long.TryParse(userIdString, out long userId)) return;
+
+        IReadOnlyCollection<string> currentUserConnections = userConnectionManager.GetConnections(userIdString);
+
+        await Clients.GroupExcept(groupName, currentUserConnections)
+            .TypingStopped(new TypingEvent(groupId, userId));
     }
 
     public async Task LeaveGroup(string groupName)
