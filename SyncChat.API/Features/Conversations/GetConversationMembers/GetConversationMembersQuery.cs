@@ -36,6 +36,8 @@ public sealed class GetConversationMembersQueryHandler(IIdentityService identity
                 .Where(cm => cm.ConversationId == query.ConversationId
                         && cm.IsActive
                         && cm.LeftAt == null)
+                .OrderByDescending(cm => cm.User.UserID == currentUserId)
+                .ThenBy(cm => cm.User.Name)
                 .Select(cm => new ConversationMemberDTO
                 {
                     UserID = cm.User.UserID,
