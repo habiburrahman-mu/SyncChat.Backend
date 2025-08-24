@@ -36,6 +36,7 @@ public class EndpointConstants
         public const string GetLastMessage = "/getLastMessage";
         public const string MarkMessageAsSeen = "/MarkMessageAsSeen";
         public const string GetDetail = "/getDetail";
+        public const string GetMembers = "/getMembers";
     }
 
     public static class MessageRoute
