@@ -9,8 +9,8 @@ public sealed class GetUserDetailEndpoint : IUserEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(UserRoute.GetUserDetail,
-            async (long userId, IQuerySender sender, CancellationToken cancellationToken) =>
+        group.MapGet(UserRoute.GetDetail,
+            async (IQuerySender sender, CancellationToken cancellationToken) =>
             {
                 GetUserDetailQuery query = new();
 
