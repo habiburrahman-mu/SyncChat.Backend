@@ -26,6 +26,7 @@ public class EndpointConstants
     {
         public const string Base = "user";
         public const string GetUserByUserName = "/getByUserName";
+        public const string GetUserDetail = "/getUserDetail";
     }
 
     public static class ConversationRoute
