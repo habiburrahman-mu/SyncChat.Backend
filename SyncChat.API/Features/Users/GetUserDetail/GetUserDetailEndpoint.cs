@@ -1,4 +1,5 @@
 ﻿
+using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -12,10 +13,12 @@ public sealed class GetUserDetailEndpoint : IUserEndpoint
             async (long userId, IQuerySender sender, CancellationToken cancellationToken) =>
             {
                 GetUserDetailQuery query = new();
+
                 Result<GetUserDetailResponse> result = await sender.SendAsync(query, cancellationToken);
-                return result.Match(
-                    user => user is not null ? Results.Ok(user) : Results.NotFound(),
-                    CustomResults.Problem);
-            });
+
+                return result.Match(Results.Ok, CustomResults.Problem);
+            })
+            .Produces<GetUserDetailResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }
