@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
@@ -10,20 +11,28 @@ namespace SyncChat.API.Features.Users.UpdateUser;
 
 public sealed record UpdateUserCommand(
     long UserID,
-    JsonPatchDocument<UpdateUserRequest> PatchDocument): ICommand<UpdateUserResponse>;
+    JsonPatchDocument<UpdateUserRequest> PatchDocument) : ICommand<UpdateUserResponse>;
 
 public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand, UpdateUserResponse>
 {
     private readonly ApplicationDbContext dbContext;
+    private readonly IIdentityService identityService;
 
-    public UpdateUserCommandHandler(ApplicationDbContext dbContext)
+    public UpdateUserCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService)
     {
         this.dbContext = dbContext;
+        this.identityService = identityService;
     }
 
     public async Task<Result<UpdateUserResponse>> HandleAsync(UpdateUserCommand command, CancellationToken cancellationToken)
     {
-        User? user = await dbContext.Users
+        long currentUserID = identityService.GetUserID();
+
+        if (currentUserID != command.UserID)
+            return Result.Failure<UpdateUserResponse>(UserErrors.Unauthorized());
+
+
+        User ? user = await dbContext.Users
             .FirstOrDefaultAsync(x => x.UserID == command.UserID);
 
         if (user == null)
