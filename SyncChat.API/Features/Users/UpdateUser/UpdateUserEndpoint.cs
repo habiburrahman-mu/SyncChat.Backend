@@ -19,6 +19,7 @@ public sealed class UpdateUserEndpoint : IUserEndpoint
 
                 return result.Match(Results.Ok, CustomResults.Problem);
             })
+            .WithSummary("Update User")
             .Produces<UpdateUserResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
