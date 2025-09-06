@@ -1,13 +1,7 @@
-﻿
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.JsonPatch;
-using Microsoft.AspNetCore.Mvc;
-using SyncChat.API.Shared.Infrastructure;
+﻿using Microsoft.AspNetCore.Mvc;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
-using System.Runtime.Serialization;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
-using static System.Net.WebRequestMethods;
 
 namespace SyncChat.API.Features.Users.UpdateUser;
 
