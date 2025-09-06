@@ -11,7 +11,9 @@ namespace SyncChat.API.Features.Users.UpdateUser;
 
 public sealed record UpdateUserCommand(
     long UserID,
-    JsonPatchDocument<UpdateUserRequest> PatchDocument) : ICommand<UpdateUserResponse>;
+    string Name,
+    string Email,
+    string? Phone) : ICommand<UpdateUserResponse>;
 
 public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand, UpdateUserResponse>
 {
@@ -38,16 +40,9 @@ public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand
         if (user == null)
             return Result.Failure<UpdateUserResponse>(UserErrors.NotFound(command.UserID));
 
-        UpdateUserRequest userDto = new UpdateUserRequest(
-            Name: user.Name,
-            Email: user.Email,
-            Phone: user.Phone);
-
-        command.PatchDocument.ApplyTo(userDto);
-
-        user.Name = userDto.Name;
-        user.Email = userDto.Email;
-        user.Phone = userDto.Phone;
+        user.Name = command.Name;
+        user.Email = command.Email;
+        user.Phone = command.Phone;
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
