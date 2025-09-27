@@ -24,4 +24,4 @@ public class Message
     public ICollection<MessageReaction> Reactions { get; set; } = new List<MessageReaction>();
 }
 
-public enum MessageType { Text, Image, Video, File }
+public enum MessageType { Text, Image, Video, File, System }

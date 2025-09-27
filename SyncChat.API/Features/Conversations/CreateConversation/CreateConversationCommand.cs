@@ -1,10 +1,12 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
+using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -60,6 +62,24 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
             .ToList();
 
         await _dbContext.ConversationMembers.AddRangeAsync(members, cancellationToken);
+
+        Message systemMessage = new()
+        {
+            Uuid = Guid.NewGuid(),
+            Conversation = conversation,
+            SenderId = command.CreatedBy,
+            Type = MessageType.System,
+            Content = null,
+            MetaData = JsonConvert.SerializeObject(new 
+            { 
+                Type = SystemMessageType.ConversationCreated,
+                CreatedBy = command.CreatedBy
+            }),
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        };
+
+        await _dbContext.Messages.AddAsync(systemMessage);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
