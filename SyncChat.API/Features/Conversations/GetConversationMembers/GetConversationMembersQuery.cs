@@ -33,9 +33,7 @@ public sealed class GetConversationMembersQueryHandler(IIdentityService identity
 
             var members = await dbContext.ConversationMembers
                 .AsNoTracking()
-                .Where(cm => cm.ConversationId == query.ConversationId
-                        && cm.IsActive
-                        && cm.LeftAt == null)
+                .Where(cm => cm.ConversationId == query.ConversationId)
                 .OrderByDescending(cm => cm.User.UserID == currentUserId)
                 .ThenBy(cm => cm.User.Name)
                 .Select(cm => new ConversationMemberDTO
@@ -44,7 +42,9 @@ public sealed class GetConversationMembersQueryHandler(IIdentityService identity
                     UserName = cm.User.UserName,
                     Name = cm.User.Name,
                     Role = cm.Role,
-                    JoinedAt = cm.JoinedAt
+                    JoinedAt = cm.JoinedAt,
+                    IsActive = cm.IsActive,
+                    LeftAt = cm.LeftAt
                 })
                 .ToListAsync(cancellationToken);
 

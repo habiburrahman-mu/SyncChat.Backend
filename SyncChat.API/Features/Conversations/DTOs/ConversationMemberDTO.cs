@@ -9,4 +9,6 @@ public class ConversationMemberDTO
     public string Name { get; set; } = string.Empty;
     public MemberRole Role { get; set; }
     public DateTimeOffset JoinedAt { get; set;}
+    public DateTimeOffset? LeftAt { get; set; }
+    public bool IsActive { get; set; } = true;
 }
