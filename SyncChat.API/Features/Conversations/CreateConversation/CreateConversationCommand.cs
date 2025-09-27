@@ -63,15 +63,31 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
         await _dbContext.ConversationMembers.AddRangeAsync(members, cancellationToken);
 
-        Message systemMessage = new()
+        if (command.Type == ConversationType.Group)
+        {
+            await AddSystemMessages(command, conversation);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await SendNotificationAsync(command, conversation, cancellationToken);
+
+        return conversation.ConversationId;
+    }
+
+    private async Task AddSystemMessages(CreateConversationCommand command, Conversation conversation)
+    {
+        List<Message> systemMessages = new();
+
+        Message groupCreateSystemMessage = new()
         {
             Uuid = Guid.NewGuid(),
             Conversation = conversation,
             SenderId = command.CreatedBy,
             Type = MessageType.System,
             Content = null,
-            MetaData = JsonConvert.SerializeObject(new 
-            { 
+            MetaData = JsonConvert.SerializeObject(new
+            {
                 Type = SystemMessageType.ConversationCreated,
                 CreatedBy = command.CreatedBy
             }),
@@ -79,13 +95,35 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
-        await _dbContext.Messages.AddAsync(systemMessage);
+        systemMessages.Add(groupCreateSystemMessage);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        command.MemberIdList
+            .Where(x => x != command.CreatedBy)
+            .ToList()
+            .ForEach(x =>
+            {
+                Message memberAddSystemMessage = new()
+                {
+                    Uuid = Guid.NewGuid(),
+                    Conversation = conversation,
+                    SenderId = command.CreatedBy,
+                    Type = MessageType.System,
+                    Content = null,
+                    MetaData = JsonConvert.SerializeObject(new
+                    {
+                        Type = SystemMessageType.MemberAdded,
+                        UserId = x,
+                        AddedBy = command.CreatedBy,
+                    }),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                };
 
-        await SendNotificationAsync(command, conversation, cancellationToken);
+                systemMessages.Add(memberAddSystemMessage);
+            });
 
-        return conversation.ConversationId;
+
+        await _dbContext.Messages.AddRangeAsync(systemMessages);
     }
 
     private async Task SendNotificationAsync(CreateConversationCommand command, Conversation conversation, CancellationToken cancellationToken)
