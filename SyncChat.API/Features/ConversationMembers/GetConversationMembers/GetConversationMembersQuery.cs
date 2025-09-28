@@ -6,7 +6,7 @@ using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 
-namespace SyncChat.API.Features.Conversations.GetConversationMembers;
+namespace SyncChat.API.Features.ConversationMembers.GetConversationMembers;
 
 public sealed record GetConversationMembersQuery(long ConversationId) : IQuery<List<ConversationMemberDTO>>;
 

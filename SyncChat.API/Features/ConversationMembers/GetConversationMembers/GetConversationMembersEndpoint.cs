@@ -5,13 +5,13 @@ using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
-namespace SyncChat.API.Features.Conversations.GetConversationMembers;
+namespace SyncChat.API.Features.ConversationMembers.GetConversationMembers;
 
-public class GetConversationMembersEndpoint : IConversationEndpoint
+public class GetConversationMembersEndpoint : IConversationMemberEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(ConversationRoute.GetMembers + "/{conversationId}",
+        group.MapGet(ConversationMemberRoute.GetList + "/{conversationId}",
             async ([FromRoute] long conversationId, IQuerySender querySender, CancellationToken cancellationToken) =>
             {
                 var query = new GetConversationMembersQuery(ConversationId: conversationId);
