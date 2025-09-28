@@ -22,7 +22,8 @@ public class GetConversationMembersEndpoint : IConversationMemberEndpoint
             })
             .WithSummary("Get Conversation Members by Conversation ID")
             .Produces<List<ConversationMemberDTO>>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status401Unauthorized);
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
     }
 }

@@ -23,6 +23,6 @@ public sealed class GetConversationDetailEndpoint : IConversationEndpoint
             .WithSummary("Get Conversation Detail by ID")
             .Produces<ConversationDTO>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status401Unauthorized);
+            .ProducesProblem(StatusCodes.Status403Forbidden);
     }
 }

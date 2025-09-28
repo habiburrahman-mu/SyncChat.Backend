@@ -12,7 +12,7 @@ public static class ConversationErrors
         "Conversation.InvalidUser",
         $"The user with the Id = '{userId}' is invalid.");
 
-    public static Error NotAuthorized(long conversationId) => Error.Validation(
+    public static Error NotAuthorized(long conversationId) => Error.Forbidden(
         "Conversation.NotAuthorized",
         $"You are not authorized to perform this action on the conversation with Id = '{conversationId}'.");
 
