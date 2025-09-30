@@ -1,7 +1,13 @@
 ﻿using FluentValidation;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using SyncChat.API.Features.Conversations.DTOs;
+using SyncChat.API.Features.Messages.DTOs;
+using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
+using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
@@ -13,7 +19,7 @@ public sealed record AddConversationMemberCommand(
     long ConversationId,
     List<long> MemberIds) : ICommand;
 
-public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService)
+public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService, IHubContext<NotificationHub, INotificationClient> hub)
     : ICommandHandler<AddConversationMemberCommand>
 {
     public async Task<Result> HandleAsync(AddConversationMemberCommand command, CancellationToken cancellationToken = default)
@@ -43,9 +49,67 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
             .ToList();
 
         await dbContext.ConversationMembers.AddRangeAsync(newMembers, cancellationToken);
+
+        List<Message> systemMessages = await AddSystemMessages(command, userId, cancellationToken);
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        await SendNotificationAsync(
+            command.ConversationId,
+            existingMembers.Select(x => x.UserId).ToList(),
+            command.MemberIds,
+            systemMessages,
+            cancellationToken);
+
         return Result.Success();
+    }
+
+    private async Task<List<Message>> AddSystemMessages(AddConversationMemberCommand command, long userId, CancellationToken cancellationToken)
+    {
+        var systemMessages = new List<Message>();
+
+        command.MemberIds.ForEach(id =>
+        {
+            var systemMessage = new Message
+            {
+                Uuid = Guid.NewGuid(),
+                ConversationId = command.ConversationId,
+                SenderId = userId,
+                Type = MessageType.System,
+                Content = null,
+                MetaData = JsonConvert.SerializeObject(new
+                {
+                    Type = SystemMessageType.MemberAdded,
+                    UserId = id,
+                    AddedBy = userId,
+                }),
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            systemMessages.Add(systemMessage);
+        });
+
+        await dbContext.Messages.AddRangeAsync(systemMessages, cancellationToken);
+
+        return systemMessages;
+    }
+
+    private async Task SendNotificationAsync(long conversationId, List<long> existingMembers, List<long> newMembers, List<Message> systemMessages, CancellationToken cancellationToken)
+    {
+        var conversation = await dbContext.Conversations
+            .AsNoTracking()
+            .FirstAsync(c => c.ConversationId == conversationId, cancellationToken);
+
+        ConversationDTO conversationDTO = conversation.ToDTO()!;
+
+        var allNotificationTasks = newMembers
+            .Select(userId => hub.Clients.User(userId.ToString()).AddedToConversation(conversationDTO))
+            .Concat(systemMessages.Select(message =>
+                hub.Clients.Groups(message.ConversationId.ToString()).MessageReceived(message.ToDTO())))
+            .Append(hub.Clients.Groups(conversationId.ToString()).NewMemberAdded(conversationId));
+
+        await Task.WhenAll(allNotificationTasks);
     }
 }
 
@@ -69,6 +133,13 @@ public sealed class AddConversationMemberCommandValidator : AbstractValidator<Ad
                 return await dbContext.Conversations.AnyAsync(c => c.ConversationId == conversationId, cancellationToken);
             })
             .WithMessage("Conversation does not exist.");
+
+        RuleFor(x => x.ConversationId)
+            .MustAsync(async (conversationId, cancellationToken) =>
+            {
+                return await dbContext.Conversations.AnyAsync(c => c.ConversationId == conversationId && c.Type != ConversationType.Direct, cancellationToken);
+            })
+            .WithMessage("Cannot add members to a direct conversation.");
 
         RuleForEach(x => x.MemberIds)
             .MustAsync(async (memberId, cancellationToken) =>

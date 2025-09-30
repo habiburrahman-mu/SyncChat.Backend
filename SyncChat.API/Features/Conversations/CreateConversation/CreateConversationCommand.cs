@@ -135,7 +135,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
                                 .ToList();
 
         ConversationDTO conversationDTO = conversation.ToDTO()!;
-        conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? memberList.First() : null;
+        conversationDTO.OtherUserId = conversation.Type == ConversationType.Direct ? currentUserId : null;
 
         if (conversation.Type == ConversationType.Direct)
         {

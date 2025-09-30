@@ -22,6 +22,9 @@ public interface INotificationClient
     /// </summary>
     Task NewConversationCreated(ConversationDTO conversation);
 
+    Task NewMemberAdded(long conversationId);
+    Task AddedToConversation(ConversationDTO conversation);
+
     Task TypingStarted(TypingEvent typingEvent);
 
     Task TypingStopped(TypingEvent typingEvent);

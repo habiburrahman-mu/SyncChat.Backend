@@ -55,13 +55,18 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
+var jsonStringEnumConverter = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
+
 builder.Services.ConfigureHttpJsonOptions(opts =>
 {
-    opts.SerializerOptions.Converters.Add(
-        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    opts.SerializerOptions.Converters.Add(jsonStringEnumConverter);
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR().AddJsonProtocol(
+    options =>
+    {
+        options.PayloadSerializerOptions.Converters.Add(jsonStringEnumConverter);
+    });
 
 var app = builder.Build();
 
