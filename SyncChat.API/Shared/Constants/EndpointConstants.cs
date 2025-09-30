@@ -44,6 +44,7 @@ public class EndpointConstants
     {
         public const string Base = "conversationMember";
         public const string GetList = "getList";
+        public const string Add = "add";
     }
 
     public static class MessageRoute
