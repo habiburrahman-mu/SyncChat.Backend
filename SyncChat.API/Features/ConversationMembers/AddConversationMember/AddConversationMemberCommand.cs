@@ -52,6 +52,13 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
 
         List<Message> systemMessages = await AddSystemMessages(command, userId, cancellationToken);
 
+        var conversation = await dbContext.Conversations
+            .FirstAsync(c => c.ConversationId == command.ConversationId, cancellationToken);
+
+        conversation.LastMessage = systemMessages.LastOrDefault();
+
+        dbContext.Conversations.Update(conversation);
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         await SendNotificationAsync(
@@ -105,6 +112,7 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
 
         var allNotificationTasks = newMembers
             .Select(userId => hub.Clients.User(userId.ToString()).AddedToConversation(conversationDTO))
+            .Concat(existingMembers.Select(userId => hub.Clients.User(userId.ToString()).HasNewMessage(conversationId)))
             .Concat(systemMessages.Select(message =>
                 hub.Clients.Groups(message.ConversationId.ToString()).MessageReceived(message.ToDTO())))
             .Append(hub.Clients.Groups(conversationId.ToString()).NewMemberAdded(conversationId));

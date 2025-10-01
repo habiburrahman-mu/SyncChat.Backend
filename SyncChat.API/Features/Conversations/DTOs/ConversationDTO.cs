@@ -15,6 +15,7 @@ public class ConversationDTO
     public long? LastMessageId { get; set; }
     public string Settings { get; set; } = "{}";
     public string? LastMessage { get; set; } = string.Empty;
+    public string? LastMessageMetaData { get; set; } = string.Empty;
     public long? OtherUserId { get; set; }
     public long? LastSeenMessageId { get; set; }
     public bool HaveUnreadMessages { get; set; }
@@ -51,6 +52,7 @@ public static class ConversationExtensions
                     if (dto != null && c.LastMessage != null)
                     {
                         dto.LastMessage = c.LastMessage.Content;
+                        dto.LastMessageMetaData = c.LastMessage.MetaData;
                     }
                     return dto;
                 })

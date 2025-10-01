@@ -7,14 +7,14 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Conversations.GetLastMessage;
 
-public sealed record GetLastMessageQuery(long ConversationId) : IQuery<string>;
+public sealed record GetLastMessageQuery(long ConversationId) : IQuery<GetLastMessageResponse>;
 
 public sealed class GetLastMessageQueryHandler(
     ApplicationDbContext dbContext,
     IIdentityService identityService)
-    : IQueryHandler<GetLastMessageQuery, string>
+    : IQueryHandler<GetLastMessageQuery, GetLastMessageResponse>
 {
-    public async Task<Result<string>> HandleAsync(GetLastMessageQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<GetLastMessageResponse>> HandleAsync(GetLastMessageQuery query, CancellationToken cancellationToken = default)
     {
         long currentUserId = identityService.GetUserID();
 
@@ -22,15 +22,23 @@ public sealed class GetLastMessageQueryHandler(
             .AnyAsync(cm => cm.ConversationId == query.ConversationId && cm.UserId == currentUserId, cancellationToken);
 
         if (!isMember)
-            return Result.Failure<string>(ConversationErrors.NotAuthorized(query.ConversationId));
+            return Result.Failure<GetLastMessageResponse>(ConversationErrors.NotAuthorized(query.ConversationId));
 
-        string? lastMessageContent = await dbContext.Conversations
+        var lastMessageContent = await dbContext.Conversations
             .Where(c => c.ConversationId == query.ConversationId)
-            .Select(c => c.LastMessage!.Content)
+            .Select(c => new
+            {
+                c.LastMessageId,
+                Content = c.LastMessage != null ? c.LastMessage.Content : null,
+                MetaData = c.LastMessage != null ? c.LastMessage.MetaData : null
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return lastMessageContent is null
-            ? Result.Failure<string>(ConversationErrors.LastMessageNotFound(query.ConversationId))
-            : Result.Success(lastMessageContent);
+        return lastMessageContent != null && lastMessageContent.LastMessageId.HasValue
+            ? Result.Success(new GetLastMessageResponse(
+                lastMessageContent.LastMessageId.Value,
+                lastMessageContent.Content,
+                lastMessageContent.MetaData))
+            : Result.Failure<GetLastMessageResponse>(ConversationErrors.LastMessageNotFound(query.ConversationId));
     }
 }

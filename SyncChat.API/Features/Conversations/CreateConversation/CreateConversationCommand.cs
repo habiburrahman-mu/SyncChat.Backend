@@ -34,6 +34,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
     public async Task<Result<long>> HandleAsync(CreateConversationCommand command, CancellationToken cancellationToken = default)
     {
+        await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         Conversation conversation = new()
         {
@@ -62,6 +63,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
             .ToList();
 
         await _dbContext.ConversationMembers.AddRangeAsync(members, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         if (command.Type == ConversationType.Group)
         {
@@ -69,6 +71,8 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _dbContext.Database.CommitTransactionAsync(cancellationToken);
 
         await SendNotificationAsync(command, conversation, cancellationToken);
 
@@ -124,6 +128,9 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
 
 
         await _dbContext.Messages.AddRangeAsync(systemMessages);
+        
+        conversation.LastMessage = systemMessages.Last();
+        _dbContext.Conversations.Update(conversation);
     }
 
     private async Task SendNotificationAsync(CreateConversationCommand command, Conversation conversation, CancellationToken cancellationToken)

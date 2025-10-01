@@ -14,12 +14,12 @@ public class GetLastMessageEndpoint : IConversationEndpoint
             {
                 var query = new GetLastMessageQuery(ConversationId: conversationId);
 
-                var result = await querySender.SendAsync(query, cancellationToken);
+                Result<GetLastMessageResponse> result = await querySender.SendAsync(query, cancellationToken);
 
                 return result.Match(Results.Ok, CustomResults.Problem);
             })
             .WithSummary("Get Last Message of Conversation")
-            .Produces<string>(StatusCodes.Status200OK)
+            .Produces<GetLastMessageResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status403Forbidden);
     }
 }
