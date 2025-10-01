@@ -115,7 +115,7 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
             .Concat(existingMembers.Select(userId => hub.Clients.User(userId.ToString()).HasNewMessage(conversationId)))
             .Concat(systemMessages.Select(message =>
                 hub.Clients.Groups(message.ConversationId.ToString()).MessageReceived(message.ToDTO())))
-            .Append(hub.Clients.Groups(conversationId.ToString()).NewMemberAdded(conversationId));
+            .Concat(existingMembers.Select(userId => hub.Clients.User(userId.ToString()).NewMemberAdded(conversationId)));
 
         await Task.WhenAll(allNotificationTasks);
     }
