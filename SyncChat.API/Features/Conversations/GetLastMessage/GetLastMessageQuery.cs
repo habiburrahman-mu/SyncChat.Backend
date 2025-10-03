@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
+using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -24,21 +25,27 @@ public sealed class GetLastMessageQueryHandler(
         if (!isMember)
             return Result.Failure<GetLastMessageResponse>(ConversationErrors.NotAuthorized(query.ConversationId));
 
-        var lastMessageContent = await dbContext.Conversations
+        var lastMessage = await dbContext.Conversations
             .Where(c => c.ConversationId == query.ConversationId)
-            .Select(c => new
-            {
-                c.LastMessageId,
-                Content = c.LastMessage != null ? c.LastMessage.Content : null,
-                MetaData = c.LastMessage != null ? c.LastMessage.MetaData : null
-            })
+            .Select(c => new LastMessageProjection(
+                c.LastMessageId, 
+                c.LastMessage != null ? c.LastMessage.Content : null, 
+                c.LastMessage != null ? c.LastMessage.MetaData : null, 
+                c.LastMessage != null ? c.LastMessage.Type : null))
             .FirstOrDefaultAsync(cancellationToken);
 
-        return lastMessageContent != null && lastMessageContent.LastMessageId.HasValue
+        return lastMessage != null && lastMessage.LastMessageId.HasValue
             ? Result.Success(new GetLastMessageResponse(
-                lastMessageContent.LastMessageId.Value,
-                lastMessageContent.Content,
-                lastMessageContent.MetaData))
+                lastMessage.LastMessageId.Value,
+                lastMessage.Content,
+                lastMessage.MessageType,
+                lastMessage.MetaData))
             : Result.Failure<GetLastMessageResponse>(ConversationErrors.LastMessageNotFound(query.ConversationId));
     }
 }
+
+public sealed record LastMessageProjection(
+    long? LastMessageId, 
+    string? Content, 
+    string? MetaData, 
+    MessageType? MessageType);
