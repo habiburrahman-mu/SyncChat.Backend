@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.AspNetCore.Mvc;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
@@ -9,7 +10,7 @@ public sealed class GetUserMetaDataEndpoint : IUserEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(UserRoute.GetMetaData, async (long userId, IQueryHandler<GetUserMetaDataQuery, GetUserMetaDataResponse> queryHandler, CancellationToken cancellationToken) =>
+        group.MapGet(UserRoute.GetMetaData + "/{userId}", async ([FromRoute] long userId, IQueryHandler<GetUserMetaDataQuery, GetUserMetaDataResponse> queryHandler, CancellationToken cancellationToken) =>
         {
             var query = new GetUserMetaDataQuery(userId);
             var result = await queryHandler.HandleAsync(query, cancellationToken);

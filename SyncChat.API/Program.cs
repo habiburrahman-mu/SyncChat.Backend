@@ -85,7 +85,7 @@ app.RegisterEndpoints(Assembly.GetExecutingAssembly());
 
 app.Use(async (context, next) =>
 {
-    await Task.Delay(200); // 200 ms delay
+    await Task.Delay(300); // 200 ms delay
     await next();
 });
 
