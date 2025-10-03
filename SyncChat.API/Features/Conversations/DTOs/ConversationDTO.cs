@@ -16,6 +16,7 @@ public class ConversationDTO
     public string Settings { get; set; } = "{}";
     public string? LastMessage { get; set; } = string.Empty;
     public string? LastMessageMetaData { get; set; } = string.Empty;
+    public MessageType? LastMessageType { get; set; }
     public long? OtherUserId { get; set; }
     public long? LastSeenMessageId { get; set; }
     public bool HaveUnreadMessages { get; set; }
@@ -28,7 +29,7 @@ public static class ConversationExtensions
         if (conversation == null)
             return null;
 
-        return new ConversationDTO
+        var dto = new ConversationDTO
         {
             ConversationId = conversation.ConversationId,
             Uuid = conversation.Uuid,
@@ -41,21 +42,21 @@ public static class ConversationExtensions
             LastMessageId = conversation.LastMessageId,
             Settings = conversation.Settings
         };
+
+        if(conversation.LastMessage != null)
+        {
+            dto.LastMessage = conversation.LastMessage.Content;
+            dto.LastMessageMetaData = conversation.LastMessage.MetaData;
+            dto.LastMessageType = conversation.LastMessage.Type;
+        }
+
+        return dto;
     }
 
     public static List<ConversationDTO> ToDTOs(this List<Conversation> conversations)
     {
         return conversations
-                .Select(c =>
-                {
-                    var dto = c.ToDTO();
-                    if (dto != null && c.LastMessage != null)
-                    {
-                        dto.LastMessage = c.LastMessage.Content;
-                        dto.LastMessageMetaData = c.LastMessage.MetaData;
-                    }
-                    return dto;
-                })
+                .Select(c => c.ToDTO())
                 .Where(dto => dto != null)
                 .Cast<ConversationDTO>()
                 .ToList();

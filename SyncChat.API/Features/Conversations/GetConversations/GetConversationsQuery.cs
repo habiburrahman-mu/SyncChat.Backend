@@ -55,6 +55,9 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                     LastMessageMetaData = cm.Conversation.LastMessage != null
                                         ? cm.Conversation.LastMessage.MetaData
                                         : null,
+                    LastMessageType = cm.Conversation.LastMessage != null
+                                        ? cm.Conversation.LastMessage.Type
+                                        : null,
 
                     // for direct chats, pick the OTHER member's name; else keep existing name
                     Name = (cm.Conversation.Type == ConversationType.Direct
