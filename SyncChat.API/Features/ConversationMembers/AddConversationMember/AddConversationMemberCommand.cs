@@ -1,17 +1,16 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
-using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Utilities;
 
 namespace SyncChat.API.Features.ConversationMembers.AddConversationMember;
 
@@ -84,12 +83,7 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
                 SenderId = userId,
                 Type = MessageType.System,
                 Content = null,
-                MetaData = JsonConvert.SerializeObject(new
-                {
-                    Type = SystemMessageType.MemberAdded,
-                    UserId = id,
-                    AddedBy = userId,
-                }),
+                MetaData = SystemMessageHelper.MemberAdded(id, userId),
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
             };

@@ -1,15 +1,14 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
-using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Utilities;
 
 namespace SyncChat.API.Features.Conversations.CreateConversation;
 
@@ -90,11 +89,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
             SenderId = command.CreatedBy,
             Type = MessageType.System,
             Content = null,
-            MetaData = JsonConvert.SerializeObject(new
-            {
-                Type = SystemMessageType.ConversationCreated,
-                CreatedBy = command.CreatedBy
-            }),
+            MetaData = SystemMessageHelper.ConversationCreated(command.CreatedBy),
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
@@ -113,12 +108,7 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
                     SenderId = command.CreatedBy,
                     Type = MessageType.System,
                     Content = null,
-                    MetaData = JsonConvert.SerializeObject(new
-                    {
-                        Type = SystemMessageType.MemberAdded,
-                        UserId = x,
-                        AddedBy = command.CreatedBy,
-                    }),
+                    MetaData = SystemMessageHelper.MemberAdded(x, command.CreatedBy),
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow,
                 };
