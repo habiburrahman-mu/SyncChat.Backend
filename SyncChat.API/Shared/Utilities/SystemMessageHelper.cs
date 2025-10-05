@@ -7,7 +7,7 @@ public static class SystemMessageHelper
 {
     public static string ConversationCreated(long createdBy)
     {
-        return JsonConvert.SerializeObject(new
+        return Serialize(new
         {
             Type = SystemMessageType.ConversationCreated,
             CreatedBy = createdBy
@@ -16,11 +16,13 @@ public static class SystemMessageHelper
 
     public static string MemberAdded(long userId, long addedBy)
     {
-        return JsonConvert.SerializeObject(new
+        return Serialize(new
         {
             Type = SystemMessageType.MemberAdded,
             UserId = userId,
             AddedBy = addedBy
         });
     }
+
+    private static string Serialize(object message) => JsonConvert.SerializeObject(message);
 }
