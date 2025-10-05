@@ -24,5 +24,24 @@ public static class SystemMessageHelper
         });
     }
 
+    public static string MemberLeft(long userId)
+    {
+        return Serialize(new
+        {
+            Type = SystemMessageType.MemberLeft,
+            UserId = userId,
+        });
+    }
+
+    public static string MemberRemoved(long userId, long removedBy)
+    {
+        return Serialize(new
+        {
+            Type = SystemMessageType.MemberRemoved,
+            UserId = userId,
+            RemovedBy = removedBy
+        });
+    }
+
     private static string Serialize(object message) => JsonConvert.SerializeObject(message);
 }

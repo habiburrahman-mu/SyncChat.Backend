@@ -4,4 +4,6 @@ public static class SystemMessageType
 {
     public const string ConversationCreated = "ConversationCreated";
     public const string MemberAdded = "MemberAdded";
+    public const string MemberLeft = "MemberLeft";
+    public const string MemberRemoved = "MemberRemoved";
 }

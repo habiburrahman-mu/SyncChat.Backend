@@ -24,6 +24,10 @@ public interface INotificationClient
 
     Task NewMemberAdded(long conversationId);
     Task AddedToConversation(ConversationDTO conversation);
+    /// <summary>
+    /// Called by the server to notify the user that they were removed.
+    /// </summary>
+    Task RemovedFromConversation(long conversationId);
 
     Task TypingStarted(TypingEvent typingEvent);
 
