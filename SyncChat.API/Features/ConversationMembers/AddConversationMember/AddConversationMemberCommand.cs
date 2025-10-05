@@ -23,17 +23,18 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
 {
     public async Task<Result> HandleAsync(AddConversationMemberCommand command, CancellationToken cancellationToken = default)
     {
-        var userId = identityService.GetUserID();
+        var actorId = identityService.GetUserID();
 
         var existingMembers = await dbContext.ConversationMembers
             .Where(cm => cm.ConversationId == command.ConversationId)
             .ToListAsync(cancellationToken);
 
-        if (!existingMembers.Any(em => em.UserId == userId && (em.Role == MemberRole.Owner || em.Role == MemberRole.Admin)))
+        if (!existingMembers.Any(em => em.UserId == actorId && em.IsActive && (em.Role == MemberRole.Owner || em.Role == MemberRole.Admin)))
         {
             return Result.Failure(ConversationErrors.NotAuthorized(command.ConversationId));
         }
 
+        // add new members
         var newMembers = command.MemberIds
             .Where(id => !existingMembers.Any(em => em.UserId == id))
             .Select(id => new ConversationMember
@@ -43,13 +44,25 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
                 Role = MemberRole.Member,
                 JoinedAt = DateTimeOffset.UtcNow,
                 Settings = "{}",
-                IsActive = true
+                IsActive = true,
             })
             .ToList();
 
         await dbContext.ConversationMembers.AddRangeAsync(newMembers, cancellationToken);
 
-        List<Message> systemMessages = await AddSystemMessages(command, userId, cancellationToken);
+        // add previously left members again
+        var previousLeftMembers = existingMembers
+            .Where(em => command.MemberIds.Any(cmId => cmId == em.UserId))
+            .Select(em =>
+            {
+                em.LeftAt = null;
+                em.IsActive = true;
+                return em;
+            });
+
+        dbContext.ConversationMembers.UpdateRange(previousLeftMembers);
+
+        List<Message> systemMessages = await AddSystemMessages(command, actorId, cancellationToken);
 
         var conversation = await dbContext.Conversations
             .FirstAsync(c => c.ConversationId == command.ConversationId, cancellationToken);
