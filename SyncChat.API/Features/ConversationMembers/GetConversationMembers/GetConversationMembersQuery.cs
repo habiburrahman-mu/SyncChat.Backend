@@ -38,6 +38,7 @@ public sealed class GetConversationMembersQueryHandler(IIdentityService identity
                 .ThenBy(cm => cm.User.Name)
                 .Select(cm => new ConversationMemberDTO
                 {
+                    ConversationMemberId = cm.MemberId,
                     UserID = cm.User.UserID,
                     UserName = cm.User.UserName,
                     Name = cm.User.Name,

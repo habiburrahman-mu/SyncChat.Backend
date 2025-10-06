@@ -50,7 +50,8 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
 
         if (!selfLeave)
         {
-            ConversationMember? actorMembership = await _dbContext.ConversationMembers.FirstOrDefaultAsync(x => x.UserId == actorId, cancellationToken);
+            ConversationMember? actorMembership = await _dbContext.ConversationMembers
+                .FirstOrDefaultAsync(x => x.UserId == actorId && x.ConversationId == conversationMember.ConversationId, cancellationToken);
 
             if (actorMembership is null || !HasMemberRemovePermission(actorMembership.Role))
                 return Result.Failure(ConversationMemberErrors.Forbidden());
@@ -84,6 +85,13 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
         };
 
         await _dbContext.Messages.AddAsync(message, cancellationToken);
+
+        Conversation conversation = await _dbContext.Conversations
+            .FirstAsync(x => x.ConversationId == member.ConversationId, cancellationToken);
+
+        conversation.LastMessage = message;
+
+        _dbContext.Conversations.Update(conversation);
 
         return message;
     }
