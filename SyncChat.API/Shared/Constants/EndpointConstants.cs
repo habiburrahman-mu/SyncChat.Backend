@@ -44,9 +44,9 @@ public class EndpointConstants
     public static class ConversationMemberRoute
     {
         public const string Base = "conversationMember";
-        public const string GetList = "getList";
-        public const string Add = "add";
-        public const string Remove = "Remove";
+        public const string GetList = "/getList";
+        public const string Add = "/add";
+        public const string Remove = "/remove";
     }
 
     public static class MessageRoute
