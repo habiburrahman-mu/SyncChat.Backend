@@ -47,6 +47,7 @@ public class EndpointConstants
         public const string GetList = "/getList";
         public const string Add = "/add";
         public const string Remove = "/remove";
+        public const string MakeAdmin = "/makeAdmin";
     }
 
     public static class MessageRoute
