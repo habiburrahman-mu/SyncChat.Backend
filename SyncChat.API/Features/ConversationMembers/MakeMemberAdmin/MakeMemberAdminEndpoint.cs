@@ -24,7 +24,5 @@ public class MakeMemberAdminEndpoint : IConversationMemberEndpoint
                 return result.Match(Results.NoContent, CustomResults.Problem);
             })
             .WithSummary("Make a member admin");
-        // TODO
-        throw new NotImplementedException();
     }
 }

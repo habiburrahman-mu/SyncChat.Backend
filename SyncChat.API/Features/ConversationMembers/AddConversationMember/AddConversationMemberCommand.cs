@@ -167,7 +167,7 @@ public sealed class AddConversationMemberCommandValidator : AbstractValidator<Ad
             .MustAsync(async (command, cancellationToken) =>
             {
                 var existingMemberIds = await dbContext.ConversationMembers
-                    .Where(cm => cm.ConversationId == command.ConversationId)
+                    .Where(cm => cm.ConversationId == command.ConversationId && cm.LeftAt == null)
                     .Select(cm => cm.UserId)
                     .ToListAsync(cancellationToken);
                 return !command.MemberIds.Any(id => existingMemberIds.Contains(id));
