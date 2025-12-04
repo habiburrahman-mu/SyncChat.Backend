@@ -100,31 +100,25 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
     {
         try
         {
-            await _hub.Clients.User(removedMember.UserId.ToString()).RemovedFromConversation(removedMember.ConversationId);
+            // Fetch all active members in the conversation
+            List<long> existingMembers = await _dbContext.ConversationMembers
+                .Where(x => x.ConversationId == systemMessage.ConversationId
+                            && x.IsActive
+                            && x.LeftAt == null)
+                .Select(x => x.UserId)
+                .ToListAsync(cancellationToken);
 
-            List<long> memberIds = await _dbContext.ConversationMembers
-            .Where(x => x.ConversationId == systemMessage.ConversationId
-                    && x.IsActive
-                    && x.LeftAt == null)
-            .Select(x => x.UserId)
-            .ToListAsync(cancellationToken);
+            // Include the removed member for certain notifications
+            List<long> removedMembers = new() { removedMember.UserId };
 
-            memberIds.Add(removedMember.UserId);
+            // Prepare all notifications
+            var allNotificationTasks = removedMembers.Select(userId => _hub.Clients.User(userId.ToString()).RemovedFromConversation(removedMember.ConversationId))
+                .Concat(existingMembers.Select(userId => _hub.Clients.User(userId.ToString()).HasNewMessage(systemMessage.ConversationId)))
+                .Concat([_hub.Clients.Groups(systemMessage.ConversationId.ToString()).MessageReceived(systemMessage.ToDTO())])
+                .Concat(existingMembers.Select(userId => _hub.Clients.User(userId.ToString()).MemberRemoved(systemMessage!.ConversationId)));
 
-            // Send the message to the group
-            await _hub.Clients
-                .Groups(systemMessage.ConversationId.ToString())
-                .MessageReceived(systemMessage.ToDTO());
-
-            // Notify individual members
-            List<Task> tasks = memberIds
-                .Select(userId => _hub.Clients
-                    .User(userId.ToString())
-                    .HasNewMessage(systemMessage.ConversationId))
-                .ToList();
-
-            // Await all notifications concurrently
-            await Task.WhenAll(tasks);
+            // Execute all notifications concurrently
+            await Task.WhenAll(allNotificationTasks);
         }
         catch (Exception ex)
         {

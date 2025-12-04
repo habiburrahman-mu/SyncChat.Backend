@@ -29,6 +29,13 @@ public interface INotificationClient
     /// </summary>
     Task RemovedFromConversation(long conversationId);
 
+    /// <summary>
+    /// Notifies that a member has been removed from the specified conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique identifier of the conversation from which the member was removed.</param>
+    /// <returns>A task that represents the asynchronous notification operation.</returns>
+    Task MemberRemoved(long conversationId);
+
     Task TypingStarted(TypingEvent typingEvent);
 
     Task TypingStopped(TypingEvent typingEvent);
