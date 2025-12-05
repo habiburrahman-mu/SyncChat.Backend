@@ -43,5 +43,15 @@ public static class SystemMessageHelper
         });
     }
 
+    public static string MemberPromotedToAdmin(long userId, long promotedBy)
+    {
+        return Serialize(new
+        {
+            Type = SystemMessageType.MemberPromotedToAdmin,
+            UserId = userId,
+            PromotedBy = promotedBy
+        });
+    }
+
     private static string Serialize(object message) => JsonConvert.SerializeObject(message);
 }

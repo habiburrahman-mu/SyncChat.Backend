@@ -11,4 +11,9 @@ public static class ConversationMemberErrors
     public static Error Forbidden() => Error.Forbidden(
         "ConversationMember.Forbidden",
         $"You do not have necessary permission to perform this action.'");
+
+    public static Error AlreadyAdmin(long memberId) => Error.Conflict(
+        "ConversationMember.AlreadyAdmin",
+        $"Member with Id = {memberId} is already an admin.");
+
 }

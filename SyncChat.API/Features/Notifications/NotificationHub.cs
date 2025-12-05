@@ -36,6 +36,20 @@ public interface INotificationClient
     /// <returns>A task that represents the asynchronous notification operation.</returns>
     Task MemberRemoved(long conversationId);
 
+    /// <summary>
+    /// Notifies that a member has been promoted to admin in the specified conversation.
+    /// </summary>
+    /// <param name="conversationId"></param>
+    /// <returns></returns>
+    Task PromotedToAdmin(long conversationId);
+
+    /// <summary>
+    /// Handles the event when a member's role changes within a conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique identifier of the conversation in which the member's role was changed.</param>\
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    Task MemberRoleChanged(long conversationId);
+
     Task TypingStarted(TypingEvent typingEvent);
 
     Task TypingStopped(TypingEvent typingEvent);
