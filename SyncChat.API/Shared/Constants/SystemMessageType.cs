@@ -7,4 +7,5 @@ public static class SystemMessageType
     public const string MemberLeft = "MemberLeft";
     public const string MemberRemoved = "MemberRemoved";
     public const string MemberPromotedToAdmin = "MemberPromotedToAdmin";
+    public const string AdminStatusRemoved = "AdminStatusRemoved";
 }

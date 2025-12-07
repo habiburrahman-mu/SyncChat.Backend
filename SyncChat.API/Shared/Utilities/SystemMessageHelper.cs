@@ -53,5 +53,15 @@ public static class SystemMessageHelper
         });
     }
 
+    public static string AdminStatusRemoved(long userId, long removedBy)
+    {
+        return Serialize(new
+        {
+            Type = SystemMessageType.AdminStatusRemoved,
+            UserId = userId,
+            RemovedBy = removedBy
+        });
+    }
+
     private static string Serialize(object message) => JsonConvert.SerializeObject(message);
 }

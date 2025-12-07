@@ -50,6 +50,13 @@ public interface INotificationClient
     /// <returns>A task that represents the asynchronous operation.</returns>
     Task MemberRoleChanged(long conversationId);
 
+    /// <summary>
+    /// Notifies the system that a member has been demoted in the specified conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique identifier of the conversation in which the member was demoted.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    Task MemberDemoted(long conversationId);
+
     Task TypingStarted(TypingEvent typingEvent);
 
     Task TypingStopped(TypingEvent typingEvent);
