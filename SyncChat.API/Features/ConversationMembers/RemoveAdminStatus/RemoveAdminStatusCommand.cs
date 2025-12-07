@@ -159,7 +159,8 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
                         m.IsActive &&
                         m.LeftAt == null, ct)
                 )
-                .WithMessage("Member is not active in this conversation.");
+                .WithMessage("Member is not active in this conversation.")
+                .WithName(nameof(RemoveAdminStatusCommand.ConversationMemberId));
 
             RuleFor(x => x.ConversationMemberId)
                 .MustAsync(async (id, ct) =>
@@ -169,7 +170,8 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
 
                     return member != null && member.Role != MemberRole.Owner;
                 })
-                .WithMessage("Cannot change owner role.");
+                .WithMessage("Cannot change owner role.")
+                .WithName(nameof(RemoveAdminStatusCommand.ConversationMemberId));
 
             RuleFor(x => x.ConversationMemberId)
                 .MustAsync(async (id, ct) =>
@@ -188,7 +190,8 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
 
                     return adminCount > 1;
                 })
-                .WithMessage("Cannot remove admin role because this is the only active admin.");
+                .WithMessage("Cannot remove admin role because this is the only active admin.")
+                .WithName(nameof(RemoveAdminStatusCommand.ConversationMemberId));
         }
     }
 }
