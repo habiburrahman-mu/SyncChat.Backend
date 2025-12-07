@@ -7,11 +7,11 @@ using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.ConversationMembers.MakeMemberAdmin;
 
-public class MakeMemberAdminEndpoint : IConversationMemberEndpoint
+public sealed class MakeMemberAdminEndpoint : IConversationMemberEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapPost(
+        group.MapPut(
             ConversationMemberRoute.MakeAdmin + "/{conversationMemberId:long}",
             async ([FromRoute] long conversationMemberId,
             ICommandSender sender,
