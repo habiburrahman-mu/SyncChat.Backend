@@ -5,6 +5,7 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Security.Contracts;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SyncChat.API.Infrastructure.Security;
@@ -39,5 +40,10 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
         string token = jwtSecurityToken.WriteToken(tokenDescriptor);
 
         return token;
+    }
+
+    public string GenerateRefreshToken()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 }

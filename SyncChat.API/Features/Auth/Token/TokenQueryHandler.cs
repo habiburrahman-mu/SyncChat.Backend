@@ -31,8 +31,7 @@ public sealed class TokenQueryHandler(ApplicationDbContext dbContext, IPasswordH
 
         TokenResponse response = new(
             Token: token,
-            RefreshToken: "demo-refresh-token",
-            ExpirationInMinutes: _jwtSettings.ExpirationInMinutes);
+            RefreshToken: "demo-refresh-token");
 
         return response;
     }

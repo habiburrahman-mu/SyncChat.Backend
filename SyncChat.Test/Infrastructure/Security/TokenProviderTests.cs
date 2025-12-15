@@ -48,7 +48,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
 
         // Assert
-        jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.UUID.ToString());
+        jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.UserID.ToString());
         jwtToken.Claims.Should().ContainSingle(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == user.Email);
     }
 
@@ -82,5 +82,25 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         // Assert
         jwtToken.ValidTo.Should().BeAfter(beforeGeneration.AddMinutes(expirationInMinutes - 1));
         jwtToken.ValidFrom.Should().BeBefore(beforeGeneration.AddMinutes(expirationInMinutes + 1));
+    }
+
+    [Fact(DisplayName = "GenerateRefreshToken should return a non-empty string token")]
+    public void GenerateRefreshToken_ShouldReturnNonEmptyToken()
+    {
+        // Act
+        string token = _tokenProvider.GenerateRefreshToken();
+
+        // Assert
+        token.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact(DisplayName = "GenerateRefreshToken should return unique tokens on multiple calls")]
+    public void GenerateRefreshToken_ShouldReturnUniqueTokens_OnMultipleCalls()
+    {
+        // Act
+        string token1 = _tokenProvider.GenerateRefreshToken();
+        string token2 = _tokenProvider.GenerateRefreshToken();
+        // Assert
+        token1.Should().NotBe(token2);
     }
 }
