@@ -30,6 +30,7 @@ public class User
     // Navigation collections
     public ICollection<Conversation> CreatedConversations { get; set; } = new List<Conversation>();
     public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
 
 public enum UserStatus
