@@ -31,7 +31,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         User user = _fixture.TestUser;
 
         // Act
-        string token = _tokenProvider.GenerateToken(user);
+        string token = _tokenProvider.GenerateAccessToken(user);
 
         // Assert
         token.Should().NotBeNullOrWhiteSpace();
@@ -44,7 +44,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         User user = _fixture.TestUser;
 
         // Act
-        string token = _tokenProvider.GenerateToken(user);
+        string token = _tokenProvider.GenerateAccessToken(user);
         JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
 
         // Assert
@@ -59,7 +59,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         User user = _fixture.TestUser;
 
         // Act
-        string token = _tokenProvider.GenerateToken(user);
+        string token = _tokenProvider.GenerateAccessToken(user);
         JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
 
         // Assert
@@ -76,7 +76,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         int expirationInMinutes = _fixture.JwtSettings.ExpirationInMinutes;
 
         // Act
-        string token = _tokenProvider.GenerateToken(user);
+        string token = _tokenProvider.GenerateAccessToken(user);
         JwtSecurityToken jwtToken = _fixture.JwtSecurityTokenHandler.ReadJwtToken(token);
 
         // Assert

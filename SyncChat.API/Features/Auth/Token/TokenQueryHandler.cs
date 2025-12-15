@@ -27,7 +27,7 @@ public sealed class TokenQueryHandler(ApplicationDbContext dbContext, IPasswordH
         if (!passwordHasher.Verify(query.Password, user.PasswordHash))
             return Result.Failure<TokenResponse>(UserErrors.InvalidUserNamePassword);
 
-        string token = tokenProvider.GenerateToken(user);
+        string token = tokenProvider.GenerateAccessToken(user);
 
         TokenResponse response = new(
             Token: token,

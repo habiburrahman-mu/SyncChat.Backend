@@ -4,5 +4,5 @@ namespace SyncChat.API.Shared.Security.Contracts;
 
 public interface ITokenProvider
 {
-    string GenerateToken(User user);
+    string GenerateAccessToken(User user);
 }

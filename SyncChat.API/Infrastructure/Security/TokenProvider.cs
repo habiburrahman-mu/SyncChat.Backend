@@ -13,7 +13,7 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
 {
     private readonly JWTSettings _jwtSettings = jwtSettings.Value;
 
-    public string GenerateToken(User user)
+    public string GenerateAccessToken(User user)
     {
         string secretKey = _jwtSettings.Secret;
         SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
