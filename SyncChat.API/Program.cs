@@ -22,6 +22,8 @@ builder.Services.Configure<JWTSettings>(jwtSection);
 JWTSettings jwtSettingsInstance = jwtSection.Get<JWTSettings>()!;
 IOptions<JWTSettings> jwtOptions = Options.Create(jwtSettingsInstance);
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddSingleton<MockDb>();
 builder.Services.AddScoped<ApplicationDbContext>();
 builder.Services.AddScoped<IQuerySender, QuerySender>();

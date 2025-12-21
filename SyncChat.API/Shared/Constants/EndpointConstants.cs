@@ -11,7 +11,7 @@ public class EndpointConstants
     {
         public const string Base = "auth";
         public const string Register = "/register";
-        public const string Token = "/token";
+        public const string Login = "/login";
     }
 
     public static class WeatherRoute

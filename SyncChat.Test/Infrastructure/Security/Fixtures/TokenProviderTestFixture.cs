@@ -19,7 +19,7 @@ public class TokenProviderTestFixture
             Secret = "SuperSecretKeyForTesting1234567890",
             Issuer = "TestIssuer",
             Audience = "TestAudience",
-            ExpirationInMinutes = 60
+            AccessTokenExpirationInMinutes = 60
         };
 
         TestUser = new User

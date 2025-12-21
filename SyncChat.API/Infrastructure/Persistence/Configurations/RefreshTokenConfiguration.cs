@@ -14,21 +14,21 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.HasKey(rt => rt.Id);
 
         // Properties
-        builder.Property(x => x.TokenHash)
+        builder.Property(rt => rt.TokenHash)
             .IsRequired()
             .HasMaxLength(512);
 
-        builder.Property(x => x.DeviceIdentifier)
+        builder.Property(rt => rt.DeviceIdentifier)
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(x => x.CreatedAt)
+        builder.Property(rt => rt.CreatedAt)
             .IsRequired();
 
-        builder.Property(x => x.ExpiresAt)
+        builder.Property(rt => rt.ExpiresAt)
             .IsRequired();
 
-        builder.Property(x => x.RevokedAt)
+        builder.Property(rt => rt.RevokedAt)
             .IsRequired(false);
 
         builder.HasOne(rt => rt.User)
@@ -38,13 +38,13 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         // for faster look ups
         builder
-            .HasIndex(x => new { x.UserId, x.DeviceIdentifier });
+            .HasIndex(rt => new { rt.UserId, rt.DeviceIdentifier });
 
         // Refresh tokens must be globally unique
-        builder.HasIndex(x => x.TokenHash)
+        builder.HasIndex(rt => rt.TokenHash)
             .IsUnique();
 
         // for cleaning up expired tokens
-        builder.HasIndex(x => x.ExpiresAt);
+        builder.HasIndex(rt => rt.ExpiresAt);
     }
 }

@@ -73,7 +73,7 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         // Arrange
         DateTime beforeGeneration = DateTime.UtcNow;
         User user = _fixture.TestUser;
-        int expirationInMinutes = _fixture.JwtSettings.ExpirationInMinutes;
+        int expirationInMinutes = _fixture.JwtSettings.AccessTokenExpirationInMinutes;
 
         // Act
         string token = _tokenProvider.GenerateAccessToken(user);

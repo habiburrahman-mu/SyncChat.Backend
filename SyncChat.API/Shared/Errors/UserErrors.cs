@@ -36,6 +36,10 @@ public static class UserErrors
          "Users.Invalid.UserNameRequest",
          "Invalid user name.");
 
+    public static readonly Error InvalidDeviceId = Error.Validation(
+         "Users.Invalid.DeviceIdentifier",
+         "Invalid device identifier.");
+
     public static Error UserNameNotFound(string userName) => Error.NotFound(
        "Users.NotFound",
        $"The user with the user name = '{userName}' was not found.");
