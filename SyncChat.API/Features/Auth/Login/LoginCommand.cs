@@ -11,18 +11,18 @@ using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Auth.Login;
 
-public sealed record LoginQuery(string UserName, string Password, string DeviceIdentifier) : IQuery<LoginResponse>;
+public sealed record LoginCommand(string UserName, string Password, string DeviceIdentifier) : ICommand<LoginResponse>;
 
-public sealed class LoginQueryHandler(
+public sealed class LoginCommandHandler(
     ApplicationDbContext dbContext,
     IPasswordHasher passwordHasher,
     ITokenProvider tokenProvider,
     IOptions<JWTSettings> jwtSettings)
-    : IQueryHandler<LoginQuery, LoginResponse>
+    : ICommandHandler<LoginCommand, LoginResponse>
 {
     private readonly JWTSettings _jwtSettings = jwtSettings.Value;
 
-    public async Task<Result<LoginResponse>> HandleAsync(LoginQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<LoginResponse>> HandleAsync(LoginCommand query, CancellationToken cancellationToken = default)
     {
 
         User? user = await dbContext.Users
@@ -38,7 +38,7 @@ public sealed class LoginQueryHandler(
 
         string accessToken = tokenProvider.GenerateAccessToken(user);
         string refreshToken = tokenProvider.GenerateRefreshToken();
-        string refreshTokenHash = passwordHasher.Hash(refreshToken);
+        string refreshTokenHash = tokenProvider.HashRefreshToken(refreshToken);
 
         var now = DateTime.UtcNow;
         var existingToken = await dbContext.RefreshTokens
@@ -60,7 +60,7 @@ public sealed class LoginQueryHandler(
         dbContext.RefreshTokens.Add(newToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        LoginResponse response = new(Token: accessToken, RefreshToken: refreshToken);
+        LoginResponse response = new(AccessToken: accessToken, RefreshToken: refreshToken);
 
         return response;
     }

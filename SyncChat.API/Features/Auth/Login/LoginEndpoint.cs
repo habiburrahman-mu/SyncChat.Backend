@@ -8,20 +8,21 @@ using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.Auth.Login;
 
-public class LoginEndpoint : IAuthEndpoint
+public sealed record LoginRequest(string UserName, string Password, string DeviceIdentifier);
+
+public sealed class LoginEndpoint : IAuthEndpoint
 {
-    public sealed record LoginRequest(string UserName, string Password, string DeviceIdentifier) : ICommand<string>;
 
     public void Map(RouteGroupBuilder group)
     {
         group.MapPost(AuthRoute.Login,
-            async ([FromBody] LoginRequest request, IQuerySender sender,
+            async ([FromBody] LoginRequest request, ICommandSender sender,
             IHttpContextAccessor httpContextAccessor, IOptions<JWTSettings> jwtSettings,
             CancellationToken cancellationToken) =>
         {
-            LoginQuery query = new(request.UserName, request.Password, request.DeviceIdentifier);
+            LoginCommand command = new(request.UserName, request.Password, request.DeviceIdentifier);
 
-            Result<LoginResponse> result = await sender.SendAsync(query, cancellationToken);
+            Result<LoginResponse> result = await sender.SendAsync(command, cancellationToken);
 
             return result.Match(
                 (token) =>
@@ -40,7 +41,7 @@ public class LoginEndpoint : IAuthEndpoint
 
                     httpContext.Response.Cookies.Append("refreshToken", token.RefreshToken, cookieOptions);
 
-                    return Results.Ok(token);
+                    return Results.Ok(token.AccessToken);
                 },
                 CustomResults.Problem);
         })
