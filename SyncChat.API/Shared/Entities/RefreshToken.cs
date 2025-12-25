@@ -12,4 +12,15 @@ public class RefreshToken
 
     // Navigation
     public User User { get; set; } = null!;
+
+    // Explicit business method
+    public void Revoke(DateTime now)
+    {
+        if (RevokedAt != null)
+            return;
+
+        RevokedAt = now;
+    }
+
+    public bool IsActive(DateTime now) => RevokedAt == null && ExpiresAt > now;
 }
