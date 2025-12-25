@@ -12,7 +12,7 @@ public class EndpointConstants
         public const string Base = "auth";
         public const string Register = "/register";
         public const string Login = "/login";
-        public const string RefreshToken = "/refreshToken";
+        public const string Refresh = "/refresh";
     }
 
     public static class WeatherRoute

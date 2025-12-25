@@ -5,7 +5,7 @@ namespace SyncChat.API.Features.Auth.Refresh;
 
 public sealed record RefreshQuery() : IQuery<RefreshResponse>;
 
-public sealed class RefreshTokenQueryHandler() : IQueryHandler<RefreshQuery, RefreshResponse>
+public sealed class RefreshQueryHandler() : IQueryHandler<RefreshQuery, RefreshResponse>
 {
     public Task<Result<RefreshResponse>> HandleAsync(RefreshQuery query, CancellationToken cancellationToken = default)
     {

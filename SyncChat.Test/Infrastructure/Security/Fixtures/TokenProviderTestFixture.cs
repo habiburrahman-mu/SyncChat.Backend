@@ -16,10 +16,12 @@ public class TokenProviderTestFixture
     {
         JwtSettings = new JWTSettings
         {
-            Secret = "SuperSecretKeyForTesting1234567890",
+            AccessTokenSecret = "SuperSecretKeyForTesting1234567890",
+            RefreshTokenSecret = "AnotherSecretKeyForTesting1234567890",
             Issuer = "TestIssuer",
             Audience = "TestAudience",
-            AccessTokenExpirationInMinutes = 60
+            AccessTokenExpirationInMinutes = 60,
+            RefreshTokenExpirationInMinutes = 120
         };
 
         TestUser = new User

@@ -103,4 +103,43 @@ public class TokenProviderTests : IClassFixture<TokenProviderTestFixture>
         // Assert
         token1.Should().NotBe(token2);
     }
+
+    [Fact(DisplayName = "GenerateRefreshToken should return base64 string")]
+    public void GenerateRefreshToken_ShouldReturnBase64String()
+    {
+        // Act
+        var token = _tokenProvider.GenerateRefreshToken();
+
+        // Assert
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        // Validate Base64
+        var bytes = Convert.FromBase64String(token);
+        Assert.Equal(64, bytes.Length);
+    }
+
+    [Fact(DisplayName = "GenerateRefreshToken should generate unique tokens")]
+    public void GenerateRefreshToken_ShouldGenerateUniqueTokens()
+    {
+        // Act
+        var token1 = _tokenProvider.GenerateRefreshToken();
+        var token2 = _tokenProvider.GenerateRefreshToken();
+
+        // Assert
+        Assert.NotEqual(token1, token2);
+    }
+
+    [Fact(DisplayName = "HashRefreshToken with same input should produce same hash")]
+    public void HashRefreshToken_SameInput_ShouldProduceSameHash()
+    {
+        // Arrange
+        var refreshToken = "sample-refresh-token";
+
+        // Act
+        var hash1 = _tokenProvider.HashRefreshToken(refreshToken);
+        var hash2 = _tokenProvider.HashRefreshToken(refreshToken);
+
+        // Assert
+        Assert.Equal(hash1, hash2);
+    }
 }

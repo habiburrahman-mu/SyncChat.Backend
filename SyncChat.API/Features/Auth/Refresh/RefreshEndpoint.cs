@@ -8,7 +8,7 @@ public sealed class RefreshEndpoint : IAuthEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(AuthRoute.RefreshToken, async (IQuerySender sender, CancellationToken cancellationToken) =>
+        group.MapGet(AuthRoute.Refresh, async (IQuerySender sender, CancellationToken cancellationToken) =>
         {
             RefreshQuery query = new();
 

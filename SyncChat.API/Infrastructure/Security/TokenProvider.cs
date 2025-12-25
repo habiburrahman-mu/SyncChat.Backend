@@ -16,7 +16,7 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
 
     public string GenerateAccessToken(User user)
     {
-        string secretKey = _jwtSettings.Secret;
+        string secretKey = _jwtSettings.AccessTokenSecret;
         SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
         SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -45,5 +45,17 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
     public string GenerateRefreshToken()
     {
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+    }
+
+    public string HashRefreshToken(string refreshToken)
+    {
+        string key = _jwtSettings.RefreshTokenSecret;
+
+        using HMACSHA256 hmac = new(Encoding.UTF8.GetBytes(key));
+
+        byte[] tokenBytes = Encoding.UTF8.GetBytes(refreshToken);
+        byte[] hashBytes = hmac.ComputeHash(tokenBytes);
+
+        return Convert.ToBase64String(hashBytes);
     }
 }
