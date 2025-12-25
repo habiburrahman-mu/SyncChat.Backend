@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Shared.Auth;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
@@ -16,12 +17,10 @@ public sealed class LoginQueryHandler(
     ApplicationDbContext dbContext,
     IPasswordHasher passwordHasher,
     ITokenProvider tokenProvider,
-    IOptions<JWTSettings> jwtSettings,
-    IHttpContextAccessor httpContextAccessor)
+    IOptions<JWTSettings> jwtSettings)
     : IQueryHandler<LoginQuery, LoginResponse>
 {
     private readonly JWTSettings _jwtSettings = jwtSettings.Value;
-    private readonly HttpContext _httpContext = httpContextAccessor.HttpContext!;
 
     public async Task<Result<LoginResponse>> HandleAsync(LoginQuery query, CancellationToken cancellationToken = default)
     {
@@ -38,57 +37,31 @@ public sealed class LoginQueryHandler(
             return Result.Failure<LoginResponse>(UserErrors.InvalidDeviceId);
 
         string accessToken = tokenProvider.GenerateAccessToken(user);
-
         string refreshToken = tokenProvider.GenerateRefreshToken();
+        string refreshTokenHash = passwordHasher.Hash(refreshToken);
 
-        await SaveRefreshTokenAsync(
-            user.UserID,
-            refreshToken,
-            query.DeviceIdentifier, cancellationToken);
-
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpirationInMinutes)
-        };
-
-        _httpContext.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-
-        LoginResponse response = new(Token: accessToken);
-
-        return response;
-    }
-
-    private async Task SaveRefreshTokenAsync(
-        long userId,
-        string refreshTokenHash,
-        string deviceIdentifier, CancellationToken cancellationToken)
-    {
+        var now = DateTime.UtcNow;
         var existingToken = await dbContext.RefreshTokens
-            .Where(rt => rt.UserId == userId && rt.DeviceIdentifier == deviceIdentifier && rt.RevokedAt == null)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(rt => rt.UserId == user.UserID
+                && rt.DeviceIdentifier == query.DeviceIdentifier
+                && rt.RevokedAt == null, cancellationToken);
+
+        var newToken = RefreshTokenRules.Rotate(
+            existingToken,
+            user.UserID,
+            refreshTokenHash,
+            query.DeviceIdentifier,
+            now,
+            now.AddMinutes(_jwtSettings.RefreshTokenExpirationInMinutes));
 
         if (existingToken != null)
-        {
-            existingToken.RevokedAt = DateTime.UtcNow;
             dbContext.RefreshTokens.Update(existingToken);
-        }
 
-        RefreshToken refreshToken = new()
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            TokenHash = refreshTokenHash,
-            DeviceIdentifier = deviceIdentifier,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.RefreshTokenExpirationInMinutes),
-            CreatedAt = DateTime.UtcNow,
-            RevokedAt = null
-        };
-
-        dbContext.RefreshTokens.Add(refreshToken);
-
+        dbContext.RefreshTokens.Add(newToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        LoginResponse response = new(Token: accessToken, RefreshToken: refreshToken);
+
+        return response;
     }
 }
