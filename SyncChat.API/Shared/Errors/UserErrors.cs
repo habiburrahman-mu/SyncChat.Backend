@@ -40,6 +40,10 @@ public static class UserErrors
          "Users.Invalid.DeviceIdentifier",
          "Invalid device identifier.");
 
+    public static readonly Error InvalidRefreshToken = Error.Validation(
+         "Users.Invalid.RefreshToken",
+         "Invalid refresh token.");
+
     public static Error UserNameNotFound(string userName) => Error.NotFound(
        "Users.NotFound",
        $"The user with the user name = '{userName}' was not found.");

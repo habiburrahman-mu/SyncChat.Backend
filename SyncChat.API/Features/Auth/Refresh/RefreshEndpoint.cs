@@ -1,25 +1,62 @@
-﻿using SyncChat.API.Shared.ResultHandling;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
+using SyncChat.API.Shared.Configuration;
+using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.Auth.Refresh;
 
+public sealed record RefreshRequest(string DeviceIdentifier);
+
 public sealed class RefreshEndpoint : IAuthEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
-        group.MapGet(AuthRoute.Refresh, async (IQuerySender sender, CancellationToken cancellationToken) =>
+        group.MapPost(AuthRoute.Refresh,
+            async([FromBody] RefreshRequest request,
+                ICommandSender sender,
+                IOptions<JWTSettings> options,
+                IHttpContextAccessor httpContextAccessor,
+                CancellationToken cancellationToken) =>
         {
-            RefreshQuery query = new();
+            if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
+            {
+                return Results.Unauthorized();
+            }
+
+            RefreshCommand query = new(RefreshToken: refreshToken, DeviceIdentifier: request.DeviceIdentifier);
 
             Result<RefreshResponse> result = await sender.SendAsync(query, cancellationToken);
 
             return result.Match(
-                response => Results.Ok(response),
+                response =>
+                {
+                    var httpContext = httpContextAccessor.HttpContext!;
+
+                    var jwtSettingsValues = options.Value;
+
+                    var cookieOptions = new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.None,
+                        Expires = DateTime.UtcNow.AddMinutes(jwtSettingsValues.RefreshTokenExpirationInMinutes)
+                    };
+
+                    httpContext.Response.Cookies.Append(
+                        "refreshToken", 
+                        response.RefreshToken, 
+                        cookieOptions);
+
+                    return Results.Ok(response.AccessToken);
+                },
                 CustomResults.Problem);
         })
         .WithTags("Refresh Token")
-        .Produces<RefreshResponse>(StatusCodes.Status200OK)
+        .Produces<string>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status400BadRequest);
     }
 }

@@ -7,7 +7,7 @@ public static class RefreshTokenRules
     public static RefreshToken Rotate(
         RefreshToken? existing,
         long userId,
-        string tokenHash,
+        string newTokenHash,
         string deviceIdentifier,
         DateTime now,
         DateTime expiresAt)
@@ -18,7 +18,7 @@ public static class RefreshTokenRules
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            TokenHash = tokenHash,
+            TokenHash = newTokenHash,
             DeviceIdentifier = deviceIdentifier,
             CreatedAt = now,
             ExpiresAt = expiresAt,
