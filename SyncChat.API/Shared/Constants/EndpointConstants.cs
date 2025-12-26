@@ -13,6 +13,7 @@ public class EndpointConstants
         public const string Register = "/register";
         public const string Login = "/login";
         public const string Refresh = "/refresh";
+        public const string Logout = "/logout";
     }
 
     public static class WeatherRoute
