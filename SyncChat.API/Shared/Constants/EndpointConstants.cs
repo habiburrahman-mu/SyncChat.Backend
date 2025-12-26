@@ -14,6 +14,7 @@ public class EndpointConstants
         public const string Login = "/login";
         public const string Refresh = "/refresh";
         public const string Logout = "/logout";
+        public const string LogoutAll = "/logoutAll";
     }
 
     public static class WeatherRoute
