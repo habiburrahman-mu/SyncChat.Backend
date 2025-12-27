@@ -40,6 +40,9 @@ public record Error
     public static Error Forbidden(string code, string description) =>
         new(code, description, ErrorType.Forbidden);
 
+    public static Error Unauthorized(string code, string description) =>
+        new(code, description, ErrorType.Unauthorized);
+
 
     public static implicit operator Result(Error error) =>
         Result.Failure(error);

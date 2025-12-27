@@ -34,9 +34,8 @@ public sealed class LoginEndpoint : IAuthEndpoint
                     var cookieOptions = new CookieOptions
                     {
                         HttpOnly = true,
-                        MaxAge = TimeSpan.FromMinutes(jwtSettingsValues.RefreshTokenExpirationInMinutes),
-                        Secure = true,
-                        SameSite = SameSiteMode.None,
+                        //Secure = true,
+                        SameSite = SameSiteMode.Lax,
                         Expires = DateTime.UtcNow.AddMinutes(jwtSettingsValues.RefreshTokenExpirationInMinutes)
                     };
 

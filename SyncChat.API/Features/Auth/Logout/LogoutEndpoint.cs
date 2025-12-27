@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
@@ -20,7 +21,7 @@ public class LogoutEndpoint : IAuthEndpoint
         {
             if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
             {
-                return Results.Unauthorized();
+                return CustomResults.Problem(Result.Failure(AuthErrors.Unauthorized()));
             }
 
             LogoutCommand command = new(RefreshToken: refreshToken, DeviceIdentifier: request.DeviceIdentifier);

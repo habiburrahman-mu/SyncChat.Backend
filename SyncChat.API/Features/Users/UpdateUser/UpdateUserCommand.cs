@@ -31,7 +31,7 @@ public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand
         long currentUserID = identityService.GetUserID();
 
         if (currentUserID != command.UserID)
-            return Result.Failure<UpdateUserResponse>(UserErrors.Unauthorized());
+            return Result.Failure<UpdateUserResponse>(UserErrors.Forbidden());
 
 
         User ? user = await dbContext.Users
