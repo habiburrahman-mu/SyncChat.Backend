@@ -21,7 +21,7 @@ public class LogoutEndpoint : IAuthEndpoint
         {
             if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
             {
-                return CustomResults.Problem(Result.Failure(AuthErrors.Unauthorized()));
+                return Results.NoContent();
             }
 
             LogoutCommand command = new(RefreshToken: refreshToken, DeviceIdentifier: request.DeviceIdentifier);
