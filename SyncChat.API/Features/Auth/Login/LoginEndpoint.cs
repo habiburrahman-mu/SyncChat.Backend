@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
@@ -17,7 +18,7 @@ public sealed class LoginEndpoint : IAuthEndpoint
     {
         group.MapPost(AuthRoute.Login,
             async ([FromBody] LoginRequest request, ICommandSender sender,
-            IHttpContextAccessor httpContextAccessor, IOptions<JWTSettings> jwtSettings,
+            IHttpContextAccessor httpContextAccessor, IRefreshTokenCookieManager refreshTokenCookieManager,
             CancellationToken cancellationToken) =>
         {
             LoginCommand command = new(request.UserName, request.Password, request.DeviceIdentifier);
@@ -27,19 +28,7 @@ public sealed class LoginEndpoint : IAuthEndpoint
             return result.Match(
                 (token) =>
                 {
-                    var httpContext = httpContextAccessor.HttpContext!;
-
-                    var jwtSettingsValues = jwtSettings.Value;
-
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,
-                        //Secure = true,
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTime.UtcNow.AddMinutes(jwtSettingsValues.RefreshTokenExpirationInMinutes)
-                    };
-
-                    httpContext.Response.Cookies.Append("refreshToken", token.RefreshToken, cookieOptions);
+                    refreshTokenCookieManager.Append(httpContextAccessor.HttpContext!, token.RefreshToken);
 
                     return Results.Ok(token.AccessToken);
                 },

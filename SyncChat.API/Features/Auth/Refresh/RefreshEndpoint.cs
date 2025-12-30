@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -17,11 +18,11 @@ public sealed class RefreshEndpoint : IAuthEndpoint
         group.MapPost(AuthRoute.Refresh,
             async([FromBody] RefreshRequest request,
                 ICommandSender sender,
-                IOptions<JWTSettings> options,
                 IHttpContextAccessor httpContextAccessor,
+                IRefreshTokenCookieManager refreshTokenCookieManager,
                 CancellationToken cancellationToken) =>
         {
-            if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
+            if (!refreshTokenCookieManager.TryGet(httpContextAccessor.HttpContext!, out string refreshToken))
             {
                 return Results.Unauthorized();
             }
@@ -33,22 +34,7 @@ public sealed class RefreshEndpoint : IAuthEndpoint
             return result.Match(
                 response =>
                 {
-                    var httpContext = httpContextAccessor.HttpContext!;
-
-                    var jwtSettingsValues = options.Value;
-
-                    var cookieOptions = new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.None,
-                        Expires = DateTime.UtcNow.AddMinutes(jwtSettingsValues.RefreshTokenExpirationInMinutes)
-                    };
-
-                    httpContext.Response.Cookies.Append(
-                        "refreshToken", 
-                        response.RefreshToken, 
-                        cookieOptions);
+                    refreshTokenCookieManager.Append(httpContextAccessor.HttpContext!, response.RefreshToken);
 
                     return Results.Ok(response.AccessToken);
                 },

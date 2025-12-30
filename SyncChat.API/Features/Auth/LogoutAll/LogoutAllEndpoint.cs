@@ -1,4 +1,5 @@
 ﻿
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
@@ -12,9 +13,10 @@ public class LogoutAllEndpoint : IAuthEndpoint
         group.MapPost(AuthRoute.LogoutAll,
             async (ICommandSender sender,
                 IHttpContextAccessor httpContextAccessor,
+                IRefreshTokenCookieManager refreshTokenCookieManager,
                 CancellationToken cancellationToken) =>
         {
-            if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
+            if (!refreshTokenCookieManager.TryGet(httpContextAccessor.HttpContext!, out string refreshToken))
             {
                 return Results.Unauthorized();
             }
@@ -26,10 +28,8 @@ public class LogoutAllEndpoint : IAuthEndpoint
             return result.Match(
                 () =>
                 {
-                    var httpContext = httpContextAccessor.HttpContext!;
+                    refreshTokenCookieManager.Delete(httpContextAccessor.HttpContext!);
 
-                    httpContext.Response.Cookies.Delete("refreshToken");
-                    
                     return Results.NoContent();
                 },
                 CustomResults.Problem);

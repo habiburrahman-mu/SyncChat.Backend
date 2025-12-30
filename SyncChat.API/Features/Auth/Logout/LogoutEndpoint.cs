@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -17,9 +18,10 @@ public class LogoutEndpoint : IAuthEndpoint
             async ([FromBody] LogoutRequest request,
                 ICommandSender sender,
                 IHttpContextAccessor httpContextAccessor,
+                IRefreshTokenCookieManager refreshTokenCookieManager,
                 CancellationToken cancellationToken) =>
         {
-            if (!httpContextAccessor.HttpContext!.Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
+            if (!refreshTokenCookieManager.TryGet(httpContextAccessor.HttpContext!, out string refreshToken))
             {
                 return Results.NoContent();
             }
@@ -30,8 +32,7 @@ public class LogoutEndpoint : IAuthEndpoint
             return result.Match(
                 () =>
                 {
-                    var httpContext = httpContextAccessor.HttpContext!;
-                    httpContext.Response.Cookies.Delete("refreshToken");
+                    refreshTokenCookieManager.Delete(httpContextAccessor.HttpContext!);
                     return Results.NoContent();
                 },
                 CustomResults.Problem);
