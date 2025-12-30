@@ -25,7 +25,8 @@ public static class DependencyInjection
                     .AddPersistence(configuration)
                     .AddOpenApiInternal()
                     .AddIdentityServicesInternal()
-                    .AddSocketServicesInternal();
+                    .AddSocketServicesInternal()
+                    .AddSecurity();
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -62,11 +63,6 @@ public static class DependencyInjection
                     }
                 };
             });
-
-        //services.AddHttpContextAccessor();
-        //services.AddScoped<IUserContext, UserContext>();
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<ITokenProvider, TokenProvider>();
 
         return services;
     }
@@ -119,6 +115,16 @@ public static class DependencyInjection
     {
         services.AddSingleton<IUserConnectionManager, UserConnectionManager>();
         services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+        return services;
+    }
+
+    private static IServiceCollection AddSecurity(this IServiceCollection services)
+    {
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<ITokenProvider, TokenProvider>();
+        services.AddSingleton<ICookieOptionsProvider, CookieOptionsProvider>();
+        services.AddScoped<IRefreshTokenCookieManager, RefreshTokenCookieManager>();
+
         return services;
     }
 }
