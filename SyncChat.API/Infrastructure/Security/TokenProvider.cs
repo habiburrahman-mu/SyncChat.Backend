@@ -31,7 +31,7 @@ public sealed class TokenProvider(IOptions<JWTSettings> jwtSettings) : ITokenPro
             issuer: _jwtSettings.Issuer,
             audience: _jwtSettings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationInMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationInMinutes).AddSeconds(10),
             signingCredentials: credentials
         );
 

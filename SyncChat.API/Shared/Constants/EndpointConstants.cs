@@ -17,14 +17,6 @@ public class EndpointConstants
         public const string LogoutAll = "/logoutAll";
     }
 
-    public static class WeatherRoute
-    {
-        public const string Base = "weatherforecast";
-
-        public const string GetWeatherForecast = "/";
-        public const string SaveWeatherForecast = "/";
-    }
-
     public static class UserRoute
     {
         public const string Base = "user";
