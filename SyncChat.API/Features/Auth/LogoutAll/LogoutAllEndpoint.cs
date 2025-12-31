@@ -34,7 +34,7 @@ public class LogoutAllEndpoint : IAuthEndpoint
                 },
                 CustomResults.Problem);
         })
-        .WithTags("Logout All")
+        .WithSummary("Logout All")
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status400BadRequest);

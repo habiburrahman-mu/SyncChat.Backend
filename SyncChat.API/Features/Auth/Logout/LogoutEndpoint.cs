@@ -37,7 +37,7 @@ public class LogoutEndpoint : IAuthEndpoint
                 },
                 CustomResults.Problem);
         })
-        .WithTags("Logout")
+        .WithSummary("Logout")
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status400BadRequest);
     }

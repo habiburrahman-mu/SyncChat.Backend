@@ -40,7 +40,7 @@ public sealed class RefreshEndpoint : IAuthEndpoint
                 },
                 CustomResults.Problem);
         })
-        .WithTags("Refresh Token")
+        .WithSummary("Refresh Token")
         .Produces<string>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status400BadRequest);
