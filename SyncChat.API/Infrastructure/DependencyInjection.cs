@@ -124,6 +124,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenProvider, TokenProvider>();
         services.AddSingleton<ICookieOptionsProvider, CookieOptionsProvider>();
         services.AddScoped<IRefreshTokenCookieManager, RefreshTokenCookieManager>();
+        services.AddHostedService<RefreshTokenCleanupService>();
 
         return services;
     }
