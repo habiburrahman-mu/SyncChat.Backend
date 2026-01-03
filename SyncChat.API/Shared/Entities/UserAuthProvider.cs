@@ -3,7 +3,7 @@
 public class UserAuthProvider
 {
     public long Id { get; set; }
-    public long UserId { get; set; }
+    public long UserID { get; set; }
     public AuthProvider Provider { get; set; }
     public string ProviderUserId { get; set; } = null!;
     public string? Email { get; set; }

@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<MessageStatus> MessageStatuses { get; set; } = null!;
     public DbSet<MessageReaction> MessageReactions { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<UserAuthProvider> UserAuthProviders { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +31,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MessageStatusConfiguration());
         modelBuilder.ApplyConfiguration(new MessageReactionConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new UserAuthProviderConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }

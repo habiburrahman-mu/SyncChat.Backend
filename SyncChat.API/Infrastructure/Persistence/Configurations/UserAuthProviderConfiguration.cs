@@ -8,6 +8,8 @@ public sealed class UserAuthProviderConfiguration : IEntityTypeConfiguration<Use
 {
     public void Configure(EntityTypeBuilder<UserAuthProvider> builder)
     {
+        builder.ToTable("UserAuthProviders");
+
         builder.HasKey(uap => uap.Id);
 
         builder.Property(uap => uap.Provider)
@@ -19,13 +21,13 @@ public sealed class UserAuthProviderConfiguration : IEntityTypeConfiguration<Use
             .HasMaxLength(256);
 
         builder.Property(uap => uap.Email)
-            .HasMaxLength(256);
+            .HasMaxLength(320);
 
-       // Relationship
-       builder.HasOne(uap => uap.User)
-            .WithMany(u => u.UserAuthProviders)
-            .HasForeignKey(uap => uap.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+        // Relationship
+        builder.HasOne(uap => uap.User)
+             .WithMany(u => u.UserAuthProviders)
+             .HasForeignKey(uap => uap.UserID)
+             .OnDelete(DeleteBehavior.Cascade);
 
         // Unique (Provider, ProviderUserId)
         builder.HasIndex(uap => new { uap.Provider, uap.ProviderUserId })

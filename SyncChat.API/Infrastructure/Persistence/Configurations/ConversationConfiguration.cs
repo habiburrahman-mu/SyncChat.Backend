@@ -8,6 +8,8 @@ public class ConversationConfiguration: IEntityTypeConfiguration<Conversation>
 {
     public void Configure(EntityTypeBuilder<Conversation> builder)
     {
+        builder.ToTable("Conversations");
+
         builder.HasKey(x => x.ConversationId);
 
         builder.Property(x => x.Settings).HasColumnType("jsonb").HasDefaultValueSql("'{}'::jsonb");
