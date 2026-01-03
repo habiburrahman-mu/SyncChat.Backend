@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Auth;
@@ -22,19 +23,21 @@ public sealed class LoginCommandHandler(
 {
     private readonly JWTSettings _jwtSettings = jwtSettings.Value;
 
-    public async Task<Result<LoginResponse>> HandleAsync(LoginCommand query, CancellationToken cancellationToken = default)
+    public async Task<Result<LoginResponse>> HandleAsync(LoginCommand command, CancellationToken cancellationToken = default)
     {
+        var userAuthProvider = await dbContext.UserAuthProviders
+            .Include(uap => uap.User)
+            .FirstOrDefaultAsync(x => x.Provider == AuthProvider.Local
+                && EF.Functions.ILike(x.ProviderUserId, command.UserName), cancellationToken);
 
-        User? user = await dbContext.Users
-            .FirstOrDefaultAsync(u => EF.Functions.ILike(u.UserName.ToLower(), query.UserName), cancellationToken);
-
-        if (user is null) return Result.Failure<LoginResponse>(UserErrors.InvalidUserNamePassword);
-
-        if (!passwordHasher.Verify(query.Password, user.PasswordHash))
+        if (userAuthProvider == null)
             return Result.Failure<LoginResponse>(UserErrors.InvalidUserNamePassword);
 
-        if (string.IsNullOrWhiteSpace(query.DeviceIdentifier) || query.DeviceIdentifier.Length > 100)
-            return Result.Failure<LoginResponse>(UserErrors.InvalidDeviceId);
+        User user = userAuthProvider.User;
+
+        if(string.IsNullOrEmpty(user.PasswordHash) || 
+            !passwordHasher.Verify(command.Password, user.PasswordHash))
+            return Result.Failure<LoginResponse>(UserErrors.InvalidUserNamePassword);
 
         string accessToken = tokenProvider.GenerateAccessToken(user);
         string refreshToken = tokenProvider.GenerateRefreshToken();
@@ -43,14 +46,14 @@ public sealed class LoginCommandHandler(
         var now = DateTime.UtcNow;
         var existingToken = await dbContext.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.UserId == user.UserID
-                && rt.DeviceIdentifier == query.DeviceIdentifier
+                && rt.DeviceIdentifier == command.DeviceIdentifier
                 && rt.RevokedAt == null, cancellationToken);
 
         var newToken = RefreshTokenRules.Rotate(
             existingToken,
             user.UserID,
             refreshTokenHash,
-            query.DeviceIdentifier,
+            command.DeviceIdentifier,
             now,
             now.AddMinutes(_jwtSettings.RefreshTokenExpirationInMinutes));
 
@@ -63,5 +66,27 @@ public sealed class LoginCommandHandler(
         LoginResponse response = new(AccessToken: accessToken, RefreshToken: refreshToken);
 
         return response;
+    }
+}
+
+public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
+{
+    public LoginCommandValidator()
+    {
+        RuleFor(x => x.UserName)
+            .NotEmpty()
+            .WithMessage(UserErrors.InvalidUserNamePassword.Description)
+            .WithErrorCode(UserErrors.InvalidUserNamePassword.Code);
+
+        RuleFor(x => x.Password)
+            .NotEmpty()
+            .WithMessage(UserErrors.InvalidUserNamePassword.Description)
+            .WithErrorCode(UserErrors.InvalidUserNamePassword.Code);
+
+        RuleFor(x => x.DeviceIdentifier)
+            .NotEmpty()
+            .MaximumLength(100)
+            .WithMessage(UserErrors.InvalidDeviceId.Description)
+            .WithErrorCode(UserErrors.InvalidDeviceId.Code);
     }
 }
