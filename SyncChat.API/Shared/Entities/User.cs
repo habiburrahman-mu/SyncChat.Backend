@@ -18,7 +18,7 @@ public class User
     public string Name { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string? Phone { get; set; } 
-    public string PasswordHash { get; set; } = null!;
+    public string? PasswordHash { get; set; }
     public JsonDocument Profile { get; set; }
     public UserStatus Status { get; set; }
     public DateTimeOffset? LastActive { get; set; }
@@ -31,6 +31,8 @@ public class User
     public ICollection<Conversation> CreatedConversations { get; set; } = new List<Conversation>();
     public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+    
+    public ICollection<UserAuthProvider> UserAuthProviders { get; set; } = new List<UserAuthProvider>();
 }
 
 public enum UserStatus

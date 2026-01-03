@@ -37,7 +37,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .HasMaxLength(20);
 
         builder.Property(u => u.PasswordHash)
-               .IsRequired();
+               .IsRequired(false);
 
         builder.Property(u => u.Profile)
             .HasColumnType("jsonb")
