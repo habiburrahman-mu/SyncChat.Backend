@@ -67,7 +67,7 @@ namespace SyncChat.API.Infrastructure.Persistence.Migrations
                 SELECT
                     "UserID",
                     1, -- AuthProvider.Local
-                    "UserID"::text,
+                    "UUID",
                     "Email",
                     NOW()
                 FROM "Users"
