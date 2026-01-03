@@ -28,7 +28,7 @@ public sealed class LoginCommandHandler(
         var userAuthProvider = await dbContext.UserAuthProviders
             .Include(uap => uap.User)
             .FirstOrDefaultAsync(x => x.Provider == AuthProvider.Local
-                && EF.Functions.ILike(x.ProviderUserId, command.UserName), cancellationToken);
+                && EF.Functions.ILike(x.User.UserName, command.UserName), cancellationToken);
 
         if (userAuthProvider == null)
             return Result.Failure<LoginResponse>(UserErrors.InvalidUserNamePassword);
