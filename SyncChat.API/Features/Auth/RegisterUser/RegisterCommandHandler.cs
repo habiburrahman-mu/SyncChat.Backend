@@ -38,6 +38,17 @@ public sealed class RegisterCommandHandler(ApplicationDbContext dbContext, IPass
         };
 
         await dbContext.Users.AddAsync(user, cancellationToken);
+
+        UserAuthProvider userAuthProvider = new UserAuthProvider
+        {
+            Email = command.Email,
+            Provider = AuthProvider.Local,
+            ProviderUserId = user.UUID.ToString(),
+            LinkedAt = DateTimeOffset.UtcNow,
+            User = user
+        };
+
+        await dbContext.UserAuthProviders.AddAsync(userAuthProvider, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return user.UUID;
