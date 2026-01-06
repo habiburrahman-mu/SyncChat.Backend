@@ -15,6 +15,7 @@ public class EndpointConstants
         public const string Refresh = "/refresh";
         public const string Logout = "/logout";
         public const string LogoutAll = "/logoutAll";
+        public const string GoogleAuth = "/googleAuth";
     }
 
     public static class UserRoute
