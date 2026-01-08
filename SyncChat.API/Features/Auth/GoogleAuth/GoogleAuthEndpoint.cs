@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -13,10 +14,18 @@ public sealed class GoogleAuthEndpoint : IAuthEndpoint
     {
         group.MapPost(AuthRoute.GoogleAuth,
             async ([FromBody] GoogleAuthRequest request,
-                ICommandSender commandSender,
+                ICommandSender sender,
                 CancellationToken cancellationToken) =>
             {
+                var command = new GoogleAuthCommand(
+                    IdToken: request.idToken,
+                    DeviceIdentifier: request.deviceIdentifier);
 
+                var result = await sender.SendAsync(command, cancellationToken);
+                
+                return result.Match(
+                    success => Results.Ok(success),
+                    CustomResults.Problem);
             });
     }
 }

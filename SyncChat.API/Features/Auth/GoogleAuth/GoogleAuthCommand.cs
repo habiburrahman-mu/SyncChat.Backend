@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using SyncChat.API.Infrastructure.AuthProviders.Google;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 
@@ -8,11 +9,18 @@ public sealed record GoogleAuthCommand(string IdToken, string DeviceIdentifier) 
 
 public sealed class GoogleAuthCommandHandler : ICommandHandler<GoogleAuthCommand, GoogleAuthResponse>
 {
+    private readonly IGoogleTokenValidator googleTokenValidator;
+
+    public GoogleAuthCommandHandler(IGoogleTokenValidator googleTokenValidator)
+    {
+        this.googleTokenValidator = googleTokenValidator;
+    }
+
     public async Task<Result<GoogleAuthResponse>> HandleAsync(GoogleAuthCommand command, CancellationToken cancellationToken)
     {
         // TODO: Validate the Google ID token and authenticate the user.
 
-        
+        var googleUserInfo = await googleTokenValidator.ValidateAsync(command.IdToken);
 
 
         throw new NotImplementedException();
