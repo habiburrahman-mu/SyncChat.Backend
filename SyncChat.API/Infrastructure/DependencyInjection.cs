@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SyncChat.API.Infrastructure.AuthProviders.Google;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Infrastructure.Socket;
@@ -26,7 +27,8 @@ public static class DependencyInjection
                     .AddOpenApiInternal()
                     .AddIdentityServicesInternal()
                     .AddSocketServicesInternal()
-                    .AddSecurity();
+                    .AddSecurity()
+                    .AddAuthProviders();
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -125,6 +127,13 @@ public static class DependencyInjection
         services.AddSingleton<ICookieOptionsProvider, CookieOptionsProvider>();
         services.AddScoped<IRefreshTokenCookieManager, RefreshTokenCookieManager>();
         services.AddHostedService<RefreshTokenCleanupService>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddAuthProviders(this IServiceCollection services)
+    {
+        services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
 
         return services;
     }
