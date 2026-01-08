@@ -133,7 +133,7 @@ public static class DependencyInjection
 
     private static IServiceCollection AddAuthProviders(this IServiceCollection services)
     {
-        services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
+        services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 
         return services;
     }
