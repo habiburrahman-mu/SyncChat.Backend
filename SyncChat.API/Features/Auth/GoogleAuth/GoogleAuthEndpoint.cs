@@ -6,7 +6,7 @@ using static SyncChat.API.Shared.Constants.EndpointConstants;
 
 namespace SyncChat.API.Features.Auth.GoogleAuth;
 
-public sealed record GoogleAuthRequest(string idToken, string deviceIdentifier);
+public sealed record GoogleAuthRequest(string IdToken, string DeviceIdentifier);
 
 public sealed class GoogleAuthEndpoint : IAuthEndpoint
 {
@@ -18,8 +18,8 @@ public sealed class GoogleAuthEndpoint : IAuthEndpoint
                 CancellationToken cancellationToken) =>
             {
                 var command = new GoogleAuthCommand(
-                    IdToken: request.idToken,
-                    DeviceIdentifier: request.deviceIdentifier);
+                    IdToken: request.IdToken,
+                    DeviceIdentifier: request.DeviceIdentifier);
 
                 var result = await sender.SendAsync(command, cancellationToken);
                 
