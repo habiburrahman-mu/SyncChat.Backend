@@ -25,7 +25,7 @@ public sealed class RegisterCommandHandler(ApplicationDbContext dbContext, IPass
             UUID = Guid.NewGuid(),
             UserName = command.UserName,
             Name = command.Name,
-            Email = command.Email,
+            Email = command.Email.ToLower(),
             Phone = null,
             PasswordHash = passwordHasher.Hash(command.Password),
             Profile = JsonDocument.Parse("{}"),
