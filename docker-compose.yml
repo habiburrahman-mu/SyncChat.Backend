@@ -9,10 +9,15 @@ services:
             - "5001:5001"
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
+            - Minio__Endpoint=http://minio:9000
+            - Minio__AccessKey=minioadmin
+            - Minio__SecretKey=minioadmin
+            - Minio__Bucket=syncchat-blobs
         volumes:
             - /mnt/c/Users/User/SyncChat/SyncChat.API:/app
         depends_on:
             - postgres
+            - minio
         networks:
             - syncchat-net
         restart: unless-stopped
@@ -31,8 +36,25 @@ services:
             - syncchat-net
         restart: unless-stopped
 
+    minio:
+        image: minio/minio:latest
+        command: server /data --console-address ":9001"
+        environment:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports:
+          - "9000:9000"   # S3 API
+          - "9001:9001"   # Admin Console
+        volumes:
+          - minio_data:/data
+        networks:
+          - syncchat-net
+        restart: unless-stopped
+          
+
 volumes:
     postgres_data:
+    minio_data:
   
 networks:
     syncchat-net:
