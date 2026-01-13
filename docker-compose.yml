@@ -9,10 +9,12 @@ services:
             - "5001:5001"
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
-            - Minio__Endpoint=http://minio:9000
-            - Minio__AccessKey=minioadmin
-            - Minio__SecretKey=minioadmin
-            - Minio__Bucket=syncchat-blobs
+            - Storage__Endpoint=minio
+            - Storage__Port=9000
+            - Storage__AccessKey=minioadmin
+            - Storage__SecretKey=minioadmin
+            - Storage__Bucket=syncchat
+            - Storage__UseSSL=false
         volumes:
             - /mnt/c/Users/User/SyncChat/SyncChat.API:/app
         depends_on:

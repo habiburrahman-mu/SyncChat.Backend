@@ -22,13 +22,13 @@ builder.Services.Configure<JWTSettings>(jwtSection);
 JWTSettings jwtSettingsInstance = jwtSection.Get<JWTSettings>()!;
 IOptions<JWTSettings> jwtOptions = Options.Create(jwtSettingsInstance);
 
-//IConfigurationSection googleAuthSection = builder.Configuration.GetSection("GoogleAuth");
-//builder.Services.Configure<GoogleAuthSettings>(googleAuthSection);
-//GoogleAuthSettings googleAuthSettingsInstance = googleAuthSection.Get<GoogleAuthSettings>()!; // TODO: Null Check?
-//IOptions<GoogleAuthSettings> googleAuthOptions = Options.Create(googleAuthSettingsInstance);
-
 builder.Services.AddOptions<GoogleAuthSettings>()
     .Bind(builder.Configuration.GetSection("GoogleAuth"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<StorageSettings>()
+    .Bind(builder.Configuration.GetSection("Storage"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
