@@ -1,8 +1,8 @@
 ﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
-using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Conversations.MarkMessageAsSeen;

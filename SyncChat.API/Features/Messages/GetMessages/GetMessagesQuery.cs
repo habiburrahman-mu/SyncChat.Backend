@@ -2,9 +2,9 @@
 using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Infrastructure.Persistence;
-using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Messages.GetMessages;

@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 

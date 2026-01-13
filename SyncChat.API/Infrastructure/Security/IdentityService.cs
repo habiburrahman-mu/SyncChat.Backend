@@ -1,11 +1,7 @@
-﻿using System.Security.Claims;
+﻿using SyncChat.API.Shared.Security.Contracts;
+using System.Security.Claims;
 
 namespace SyncChat.API.Infrastructure.Security;
-
-public interface IIdentityService
-{
-    long GetUserID();
-}
 
 public class IdentityService : IIdentityService
 {

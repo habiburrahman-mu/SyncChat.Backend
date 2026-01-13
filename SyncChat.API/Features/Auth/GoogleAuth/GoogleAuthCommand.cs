@@ -6,6 +6,7 @@ using SyncChat.API.Infrastructure.AuthProviders.Google;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Shared.Auth;
+using SyncChat.API.Shared.AuthProviders.Contracts;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;

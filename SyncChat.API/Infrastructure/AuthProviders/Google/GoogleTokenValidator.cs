@@ -1,14 +1,10 @@
 ﻿using Google.Apis.Auth;
 using Microsoft.Extensions.Options;
+using SyncChat.API.Shared.AuthProviders.Contracts;
 using SyncChat.API.Shared.Configuration;
 using static Google.Apis.Auth.GoogleJsonWebSignature;
 
 namespace SyncChat.API.Infrastructure.AuthProviders.Google;
-
-public interface IGoogleTokenValidator
-{
-    Task<GoogleUserInfo> ValidateAsync(string token);
-}
 
 public class GoogleTokenValidator : IGoogleTokenValidator
 {
