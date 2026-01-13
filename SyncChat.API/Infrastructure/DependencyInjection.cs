@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Minio;
 using SyncChat.API.Infrastructure.AuthProviders.Google;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
@@ -144,6 +145,17 @@ public static class DependencyInjection
 
     private static IServiceCollection AddStorage(this IServiceCollection services)
     {
+        services.AddSingleton<IMinioClient>(serviceProvider =>
+        {
+            var storageSettings = serviceProvider.GetRequiredService<IOptions<StorageSettings>>().Value;
+
+            return new MinioClient()
+                .WithEndpoint(storageSettings.Endpoint, storageSettings.Port)
+                .WithCredentials(storageSettings.AccessKey, storageSettings.SecretKey)
+                .WithSSL(storageSettings.UseSSL)
+                .Build();
+        });
+
         services.AddScoped<IBlobStorage, MinioBlobStorage>();
 
         return services;
