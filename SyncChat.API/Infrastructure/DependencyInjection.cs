@@ -7,11 +7,13 @@ using SyncChat.API.Infrastructure.AuthProviders.Google;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Infrastructure.Socket;
+using SyncChat.API.Infrastructure.Storage;
 using SyncChat.API.Shared.AuthProviders.Contracts;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
+using SyncChat.API.Shared.Storage.Contracts;
 using System.Text;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -29,7 +31,8 @@ public static class DependencyInjection
                     .AddIdentityServicesInternal()
                     .AddSocketServicesInternal()
                     .AddSecurity()
-                    .AddAuthProviders();
+                    .AddAuthProviders()
+                    .AddStorage();
 
 
     private static IServiceCollection AddAuthenticationInternal(
@@ -135,6 +138,13 @@ public static class DependencyInjection
     private static IServiceCollection AddAuthProviders(this IServiceCollection services)
     {
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddStorage(this IServiceCollection services)
+    {
+        services.AddScoped<IBlobStorage, MinioBlobStorage>();
 
         return services;
     }
