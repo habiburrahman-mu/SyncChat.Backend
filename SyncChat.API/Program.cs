@@ -32,7 +32,6 @@ builder.Services.AddOptions<StorageSettings>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddSingleton<MockDb>();
 builder.Services.AddScoped<ApplicationDbContext>();
 builder.Services.AddScoped<IQuerySender, QuerySender>();
 builder.Services.AddScoped<ICommandSender, CommandSender>();
