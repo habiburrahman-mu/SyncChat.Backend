@@ -1,9 +1,9 @@
 ﻿namespace SyncChat.API.Shared.Storage.Contracts.Models;
 
-public sealed record BlobDownloadResult
+public sealed record BlobObjectInfo
 {
-    public required Stream Stream { get; init; }
+    public required string ObjectName { get; init; }
     public required string ContentType { get; init; }
-    public required long SizeInBytes { get; init; }
+    public required long Size { get; init; }
     public string? ETag { get; init; }
 }
