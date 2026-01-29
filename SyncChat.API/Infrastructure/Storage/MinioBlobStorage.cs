@@ -46,9 +46,40 @@ public sealed class MinioBlobStorage : IBlobStorage
         await minioClient.GetObjectAsync(getObjectArgs, cancellationToken);
     }
 
-    public Task<BlobUploadResult> UploadAsync(Stream fileStream, string contentType, string objectName, CancellationToken cancellationToken)
+    public async Task<BlobUploadResult> UploadAsync(Stream fileStream, string contentType, string objectName, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var exists = await minioClient.BucketExistsAsync(
+            new BucketExistsArgs().WithBucket(storageSettings.Bucket),
+            cancellationToken);
+
+        if (!exists)
+        {
+            await minioClient.MakeBucketAsync(
+                new MakeBucketArgs().WithBucket(storageSettings.Bucket),
+                cancellationToken);
+        }
+
+        if (fileStream.CanSeek)
+            fileStream.Position = 0;
+
+        var putObjectArgs = new PutObjectArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithObject(objectName)
+            .WithStreamData(fileStream)
+            .WithObjectSize(fileStream.CanSeek ? fileStream.Length : -1)
+            .WithContentType(contentType);
+
+        var putObjectResponse = await minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
+
+        return new BlobUploadResult
+        {
+            ObjectName = objectName,
+            Bucket = storageSettings.Bucket,
+            ContentType = contentType,
+            ETag = putObjectResponse.Etag,
+            SizeInBytes = putObjectResponse.Size,
+            UploadedAt = DateTimeOffset.UtcNow
+        };
     }
 
     public Task DeleteAsync(string objectName, CancellationToken cancellationToken)
