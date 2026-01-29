@@ -82,8 +82,12 @@ public sealed class MinioBlobStorage : IBlobStorage
         };
     }
 
-    public Task DeleteAsync(string objectName, CancellationToken cancellationToken)
+    public async Task DeleteAsync(string objectName, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        RemoveObjectArgs removeObjectArgs = new RemoveObjectArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithObject(objectName);
+
+        await minioClient.RemoveObjectAsync(removeObjectArgs, cancellationToken);
     }
 }
