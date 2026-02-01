@@ -5,13 +5,15 @@ public class MediaReference
     public Guid Id { get; set; }
 
     public Guid MediaId { get; set; }
-    public Media Media { get; set; } = default!;
 
-    // Logical reference (not FK)
     public MediaRefType RefType { get; set; } = default!;
+
     public string RefId { get; set; } = default!;
 
     public DateTimeOffset CreatedAt { get; set; }
+
+    // Logical reference (not FK)
+    public Media Media { get; set; } = default!;
 }
 
 public enum MediaRefType
