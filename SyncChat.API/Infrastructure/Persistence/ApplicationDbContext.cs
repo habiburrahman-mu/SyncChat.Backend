@@ -18,6 +18,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<MessageReaction> MessageReactions { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<UserAuthProvider> UserAuthProviders { get; set; } = null!;
+    public DbSet<Media> Media { get; set; } = null!;
+    public DbSet<MediaUploadSession> MediaUploadSessions { get; set; } = null!;
+    public DbSet<MediaReference> MediaReferences { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,6 +35,9 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MessageReactionConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
         modelBuilder.ApplyConfiguration(new UserAuthProviderConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaUploadSessionConfiguration());
+        modelBuilder.ApplyConfiguration(new MediaReferenceConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
