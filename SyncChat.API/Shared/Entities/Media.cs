@@ -21,9 +21,6 @@ public class Media
     // Lifecycle
     public MediaState State { get; set; } = default!;
 
-    // Optional integrity
-    public string? Checksum { get; set; }
-
     // Timestamps
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
