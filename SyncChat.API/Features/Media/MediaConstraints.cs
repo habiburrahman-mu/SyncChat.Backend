@@ -13,5 +13,8 @@ public static class MediaConstraints
         "image/tiff"
     };
 
+    public static bool IsMimeTypeAllowed(string mimeType) =>
+        AllowedImageMimeTypes.Contains(mimeType);
+
     public const long MaxImageFileSizeBytes = 5 * 1024 * 1024; // 5 MB
 }
