@@ -90,4 +90,19 @@ public sealed class MinioBlobStorage : IBlobStorage
 
         await minioClient.RemoveObjectAsync(removeObjectArgs, cancellationToken);
     }
+
+    public async Task<string> GeneratePresignedUploadUrlAsync(
+        string objectName,
+        TimeSpan validFor,
+        CancellationToken cancellationToken)
+    {
+        var presignedPutObjectArgs = new PresignedPutObjectArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithObject(objectName)
+            .WithExpiry((int)validFor.TotalSeconds);
+
+        string url = await minioClient.PresignedPutObjectAsync(presignedPutObjectArgs);
+
+        return url;
+    }
 }

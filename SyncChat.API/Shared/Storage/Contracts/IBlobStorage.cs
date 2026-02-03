@@ -20,4 +20,9 @@ public interface IBlobStorage
     Task DeleteAsync(
         string objectName,
         CancellationToken cancellationToken);
+
+    Task<string> GeneratePresignedUploadUrlAsync(
+        string objectName,
+        TimeSpan validFor,
+        CancellationToken cancellationToken);
 }
