@@ -1,5 +1,5 @@
 ﻿using SyncChat.API.Shared.Entities;
 
-namespace SyncChat.API.Features.Media.InitiateUpload;
+namespace SyncChat.API.Features.MediaManagement.InitiateUpload;
 
 public sealed record MediaOwnerDto(MediaOwnerType Type, string Id);

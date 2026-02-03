@@ -1,4 +1,4 @@
-﻿namespace SyncChat.API.Features.Media;
+﻿namespace SyncChat.API.Features.MediaManagement;
 
 public static class MediaConstraints
 {

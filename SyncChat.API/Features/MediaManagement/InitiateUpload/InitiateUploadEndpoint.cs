@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
-namespace SyncChat.API.Features.Media.InitiateUpload;
+namespace SyncChat.API.Features.MediaManagement.InitiateUpload;
 
 public sealed record InitiateUploadRequest(
     MediaOwnerDto Owner,

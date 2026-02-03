@@ -1,4 +1,4 @@
-﻿namespace SyncChat.API.Features.Media.InitiateUpload;
+﻿namespace SyncChat.API.Features.MediaManagement.InitiateUpload;
 
 public sealed record InitiateUploadResponse(
     Guid MediaId,

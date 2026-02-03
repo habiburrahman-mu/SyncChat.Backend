@@ -5,7 +5,7 @@ using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
 
-namespace SyncChat.API.Features.Media.InitiateUpload;
+namespace SyncChat.API.Features.MediaManagement.InitiateUpload;
 
 public sealed record InitiateUploadCommand(
     MediaOwnerDto Owner,
@@ -24,6 +24,14 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
 
     public Task<Result<InitiateUploadResponse>> HandleAsync(InitiateUploadCommand request, CancellationToken cancellationToken = default)
     {
+        Guid mediaId = Guid.NewGuid();
+        string storageKey = $"media/{mediaId}";
+
+        //Media media = new Media
+        //{
+
+        //};
+
         throw new NotImplementedException();
     }
 }

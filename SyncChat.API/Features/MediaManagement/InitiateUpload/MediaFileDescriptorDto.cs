@@ -1,3 +1,3 @@
-﻿namespace SyncChat.API.Features.Media.InitiateUpload;
+﻿namespace SyncChat.API.Features.MediaManagement.InitiateUpload;
 
 public sealed record MediaFileDescriptorDto(string FileName, string MimeType, long SizeBytes);
