@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Minio;
+using Minio.DataModel;
 using Minio.DataModel.Args;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Storage.Contracts;
@@ -104,5 +105,21 @@ public sealed class MinioBlobStorage : IBlobStorage
         string url = await minioClient.PresignedPutObjectAsync(presignedPutObjectArgs);
 
         return url;
+    }
+
+    public async Task<BlobMetadata> GetMetadataAsync(string objectName, CancellationToken cancellationToken)
+    {
+        StatObjectArgs statObjectArgs = new StatObjectArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithObject(objectName);
+
+        ObjectStat stat = await minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
+
+        return new BlobMetadata(
+            ObjectName: stat.ObjectName,
+            ContentType: stat.ContentType ?? "application/octet-stream",
+            Size: stat.Size,
+            ETag: stat.ETag
+        );
     }
 }

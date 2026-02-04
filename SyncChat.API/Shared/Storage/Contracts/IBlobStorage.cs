@@ -25,4 +25,8 @@ public interface IBlobStorage
         string objectName,
         TimeSpan validFor,
         CancellationToken cancellationToken);
+
+    Task<BlobMetadata> GetMetadataAsync(
+        string objectName, 
+        CancellationToken cancellationToken);
 }
