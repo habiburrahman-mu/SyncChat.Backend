@@ -107,13 +107,15 @@ public sealed class MinioBlobStorage : IBlobStorage
         return url;
     }
 
-    public async Task<BlobMetadata> GetMetadataAsync(string objectName, CancellationToken cancellationToken)
+    public async Task<BlobMetadata?> GetMetadataAsync(string objectName, CancellationToken cancellationToken)
     {
         StatObjectArgs statObjectArgs = new StatObjectArgs()
             .WithBucket(storageSettings.Bucket)
             .WithObject(objectName);
 
-        ObjectStat stat = await minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
+        ObjectStat? stat = await minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
+
+        if(stat is null) return null;
 
         return new BlobMetadata(
             ObjectName: stat.ObjectName,
