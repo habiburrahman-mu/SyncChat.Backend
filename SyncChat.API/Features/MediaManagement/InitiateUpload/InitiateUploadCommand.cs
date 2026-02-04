@@ -1,7 +1,10 @@
 ﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
+using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
 
@@ -15,24 +18,82 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IBlobStorage blobStorage;
+    private readonly IIdentityService identityService;
 
-    public InitiateUploadCommandHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage)
+    public InitiateUploadCommandHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage, IIdentityService identityService)
     {
         this.dbContext = dbContext;
         this.blobStorage = blobStorage;
+        this.identityService = identityService;
     }
 
-    public Task<Result<InitiateUploadResponse>> HandleAsync(InitiateUploadCommand request, CancellationToken cancellationToken = default)
+    public async Task<Result<InitiateUploadResponse>> HandleAsync(InitiateUploadCommand request, CancellationToken cancellationToken = default)
     {
+        long currentUserId = identityService.GetUserID();
+
+        User? currentUser = await dbContext.Users.FirstOrDefaultAsync(u => u.UserID == currentUserId, cancellationToken);
+
+        if(currentUser is null)
+            return Result.Failure<InitiateUploadResponse>(UserErrors.NotFound(currentUserId));
+
         Guid mediaId = Guid.NewGuid();
         string storageKey = $"media/{mediaId}";
 
-        //Media media = new Media
-        //{
+        Media media = new()
+        {
+            Id = mediaId,
+            UserId = currentUser.UUID,
+            OwnerType = request.Owner.Type,
+            OwnerId = request.Owner.Id,
+            MimeType = request.File.MimeType,
+            SizeBytes = request.File.SizeBytes,
+            StorageKey = storageKey,
+            State = MediaState.Initiated,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
 
-        //};
+        MediaUploadSession uploadSession = new()
+        {
+            Id = Guid.NewGuid(),
+            MediaId = mediaId,
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1), // TODO: Make configurable
+            MaxUploads = 1,
+            UploadCount = 0,
+            UsedAt = null,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
 
-        throw new NotImplementedException();
+        await dbContext.Media.AddAsync(media, cancellationToken);
+        await dbContext.MediaUploadSessions.AddAsync(uploadSession, cancellationToken);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var validFor = uploadSession.ExpiresAt - uploadSession.CreatedAt;
+
+            string url = await blobStorage.GeneratePresignedUploadUrlAsync(
+                storageKey,
+                validFor,
+                cancellationToken);
+
+            InitiateUploadResponse response = new(
+                MediaId: mediaId, 
+                UploadUri: new Uri(url), 
+                Expiration: uploadSession.ExpiresAt);
+
+            return response;
+        }
+        catch
+        {
+            dbContext.Media.Remove(media);
+            dbContext.MediaUploadSessions.Remove(uploadSession);
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            throw;
+        }
     }
 }
 
