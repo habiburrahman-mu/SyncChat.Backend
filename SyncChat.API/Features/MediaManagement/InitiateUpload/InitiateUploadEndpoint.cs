@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
+using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 
@@ -21,7 +22,12 @@ public sealed class InitiateUploadEndpoint : IMediaEndpoint
                     request.File
                 );
 
-                await sender.SendAsync(command, cancellationToken);
-            });
+                var result = await sender.SendAsync(command, cancellationToken);
+
+                return result.Match(result => Results.Ok(result), CustomResults.Problem);
+            })
+            .WithSummary("Initiate media upload intent")
+            .Produces<InitiateUploadResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem();
     }
 }
