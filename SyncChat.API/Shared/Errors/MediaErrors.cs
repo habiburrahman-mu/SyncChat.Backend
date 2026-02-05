@@ -31,4 +31,8 @@ public static class MediaErrors
     public static Error InvalidBlobMeta(Guid mediaId) => Error.Validation(
         "Media.InvalidBlobMeta",
         $"The blob metadata for media with ID '{mediaId}' is invalid or incomplete.");
+
+    public static Error NoUploadAttemptDetected(Guid mediaId) => Error.Validation(
+        "Media.NoUploadAttemptDetected",
+        $"No upload attempt detected for media with ID '{mediaId}'.");
 }

@@ -54,10 +54,11 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
             return Result.Failure<ConfirmMediaUploadResult>(MediaErrors.UploadSessionExpired(command.MediaId));
         }
 
-        //if(mediaUploadSession.UploadCount == 0)
-        //{
-        //    return Result.Failure<ConfirmMediaUploadResult>(MediaErrors.UploadSessionNotFound(command.MediaId));
-        //}
+        if (mediaUploadSession.UploadCount <= 0)
+        {
+            return Result.Failure<ConfirmMediaUploadResult>(
+                MediaErrors.NoUploadAttemptDetected(command.MediaId));
+        }
 
         BlobMetadata? metadata = await blobStorage.GetMetadataAsync(media.StorageKey, cancellationToken);
 
@@ -79,17 +80,43 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
             return Result.Failure<ConfirmMediaUploadResult>(MediaErrors.InvalidBlobMeta(command.MediaId));
         }
 
-        media.State = MediaState.Uploaded;
-        media.UpdatedAt = now;
+        try
+        {
+            await dbContext.Database.BeginTransactionAsync();
 
-        dbContext.Media.Update(media);
+            // Atomic state transition (concurrency-safe)
+            int updated = await dbContext.Media
+                .Where(x =>
+                    x.Id == media.Id &&
+                    x.State == MediaState.Initiated)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(x => x.State, MediaState.Uploaded)
+                        .SetProperty(x => x.UpdatedAt, now),
+                    cancellationToken);
 
-        mediaUploadSession.UsedAt = now;
+            // Another confirm already won the race
+            if (updated == 0)
+            {
+                return Result.Success(
+                    new ConfirmMediaUploadResult(media.Id, MediaState.Uploaded));
+            }
 
-        dbContext.MediaUploadSessions.Update(mediaUploadSession);
+            mediaUploadSession.UsedAt = now;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+            dbContext.MediaUploadSessions.Update(mediaUploadSession);
 
-        return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: media.State));
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            await dbContext.Database.CommitTransactionAsync(cancellationToken);
+
+            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: media.State));
+        }
+        catch
+        {
+            dbContext.Database.RollbackTransaction();
+
+            throw;
+        }
     }
 }
