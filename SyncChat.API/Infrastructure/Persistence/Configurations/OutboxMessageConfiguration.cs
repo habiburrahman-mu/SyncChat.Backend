@@ -7,6 +7,8 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
 {
     public void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<OutboxMessage> builder)
     {
+        builder.ToTable("OutboxMessages");
+
         builder.HasKey(m => m.Id);
 
         builder.Property(m => m.Type).IsRequired().HasMaxLength(255);
