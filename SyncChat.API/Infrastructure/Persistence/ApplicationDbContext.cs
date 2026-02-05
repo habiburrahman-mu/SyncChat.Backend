@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SyncChat.API.Infrastructure.Outbox;
 using SyncChat.API.Infrastructure.Persistence.Configurations;
 using SyncChat.API.Shared.Entities;
 
@@ -21,6 +22,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Media> Media { get; set; } = null!;
     public DbSet<MediaUploadSession> MediaUploadSessions { get; set; } = null!;
     public DbSet<MediaReference> MediaReferences { get; set; } = null!;
+    public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,6 +40,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MediaConfiguration());
         modelBuilder.ApplyConfiguration(new MediaUploadSessionConfiguration());
         modelBuilder.ApplyConfiguration(new MediaReferenceConfiguration());
+        modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
