@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SyncChat.API.Features.MediaManagement.MediaUploaded;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Events;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
@@ -16,11 +18,13 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IBlobStorage blobStorage;
+    private readonly IDomainEventPublisher eventPublisher;
 
-    public ConfirmMediaUploadCommandHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage)
+    public ConfirmMediaUploadCommandHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage, IDomainEventPublisher eventPublisher)
     {
         this.dbContext = dbContext;
         this.blobStorage = blobStorage;
+        this.eventPublisher = eventPublisher;
     }
 
     public async Task<Result<ConfirmMediaUploadResult>> HandleAsync(ConfirmMediaUploadCommand command, CancellationToken cancellationToken = default)
@@ -107,6 +111,8 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
             dbContext.MediaUploadSessions.Update(mediaUploadSession);
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            await eventPublisher.PublishAsync(new MediaUploadedEvent(MediaId: command.MediaId), cancellationToken);
 
             await dbContext.Database.CommitTransactionAsync(cancellationToken);
 

@@ -1,6 +1,6 @@
 ﻿using SyncChat.API.Shared.Events;
 
-namespace SyncChat.API.Features.MediaManagement.MediaUploadedEvent;
+namespace SyncChat.API.Features.MediaManagement.MediaUploaded;
 
 public sealed record class MediaUploadedEvent(Guid MediaId) : IDomainEvent
 {

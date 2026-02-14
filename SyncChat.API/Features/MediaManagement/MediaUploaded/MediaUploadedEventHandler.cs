@@ -4,7 +4,7 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Events;
 using SyncChat.API.Shared.Storage.Contracts;
 
-namespace SyncChat.API.Features.MediaManagement.MediaUploadedEvent;
+namespace SyncChat.API.Features.MediaManagement.MediaUploaded;
 
 public sealed class MediaUploadedEventHandler : IDomainEventHandler<MediaUploadedEvent>
 {

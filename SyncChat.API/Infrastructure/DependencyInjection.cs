@@ -35,7 +35,8 @@ public static class DependencyInjection
                     .AddSocketServicesInternal()
                     .AddSecurity()
                     .AddAuthProviders()
-                    .AddStorage();
+                    .AddStorage()
+                    .AddOutboxServices();
 
 
     private static IServiceCollection AddAuthenticationInternal(
