@@ -12,16 +12,13 @@ public sealed class OutboxDispatcher : BackgroundService
     private static readonly Guid WorkerId = Guid.NewGuid();
 
     private readonly ILogger<OutboxDispatcher> logger;
-    private readonly ApplicationDbContext dbContext;
     private readonly IServiceScopeFactory serviceScopeFactory;
 
     public OutboxDispatcher(
         ILogger<OutboxDispatcher> logger,
-        ApplicationDbContext dbContext,
         IServiceScopeFactory serviceScopeFactory)
     {
         this.logger = logger;
-        this.dbContext = dbContext;
         this.serviceScopeFactory = serviceScopeFactory;
     }
 
