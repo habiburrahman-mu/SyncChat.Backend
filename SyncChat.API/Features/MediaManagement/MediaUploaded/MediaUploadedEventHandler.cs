@@ -23,6 +23,9 @@ public sealed class MediaUploadedEventHandler : IDomainEventHandler<MediaUploade
 
         if (media is null || media.State != MediaState.Uploaded) return;
 
-        // This block is done for future works like validate blob, generate thumbnails, mark active.
+        media.State = MediaState.Active;
+        await dbContext.SaveChangesAsync();
+
+        // This block is done for future works like validate blob, generate thumbnails.
     }
 }

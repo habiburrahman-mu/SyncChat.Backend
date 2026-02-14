@@ -36,7 +36,8 @@ public enum MediaState
 
     Initiated = 1,   // DB row created, upload not completed
     Uploaded = 2,    // Binary exists in storage
-    Attached = 3,    // At least one MediaReference exists
+    Active = 3,      // Active Media
+    Attached = 4,    // At least one MediaReference exists
 
     Deleting = 8,    // Async delete in progress
     Deleted = 9,     // Tombstone (optional)

@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
@@ -37,7 +38,7 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
     }
     public async Task<Result<SendMessageResponse>> HandleAsync(SendMessageCommand command, CancellationToken cancellationToken)
     {
-        await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         Message message = await SaveMessageAsync(command, cancellationToken);
 
