@@ -8,6 +8,7 @@ public class Message
     public long SenderId { get; set; }
     public MessageType Type { get; set; }
     public string? Content { get; set; }
+    public Guid? MediaId { get; set; }
     public string MetaData { get; set; } = "{}";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
