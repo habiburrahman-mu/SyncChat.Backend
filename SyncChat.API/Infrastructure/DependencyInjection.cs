@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Minio;
 using SyncChat.API.Infrastructure.AuthProviders.Google;
+using SyncChat.API.Infrastructure.Outbox;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
 using SyncChat.API.Infrastructure.Socket;
@@ -12,6 +13,7 @@ using SyncChat.API.Infrastructure.Storage;
 using SyncChat.API.Shared.AuthProviders.Contracts;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
+using SyncChat.API.Shared.Events;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
@@ -157,6 +159,15 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorage, MinioBlobStorage>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddOutboxServices(this IServiceCollection services)
+    {
+        services.AddScoped<IDomainEventPublisher, OutboxEventPublisher>();
+
+        services.AddHostedService<OutboxDispatcher>();
 
         return services;
     }

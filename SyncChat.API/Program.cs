@@ -42,6 +42,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddInfrastructure(builder.Configuration, jwtOptions);
 
 builder.Services.RegisterRequestHandlers();
+builder.Services.RegisterDomainEventHandlers();
 
 //builder.Services.AddCors();
 
