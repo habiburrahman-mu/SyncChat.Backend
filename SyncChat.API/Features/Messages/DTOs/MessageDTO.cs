@@ -10,6 +10,7 @@ public class MessageDTO
     public long SenderId { get; set; }
     public MessageType Type { get; set; }
     public string? Content { get; set; }
+    public Guid? MediaId { get; set; }
     public string MetaData { get; set; } = "{}";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -33,6 +34,7 @@ public static class MessageExtensions
             SenderId = message.SenderId,
             Type = message.Type,
             Content = message.Content,
+            MediaId = message.MediaId,
             MetaData = message.MetaData,
             CreatedAt = message.CreatedAt,
             UpdatedAt = message.UpdatedAt,

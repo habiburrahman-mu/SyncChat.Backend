@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Minio;
 using SyncChat.API.Infrastructure.AuthProviders.Google;
+using SyncChat.API.Infrastructure.Notification;
 using SyncChat.API.Infrastructure.Outbox;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Infrastructure.Security;
@@ -14,6 +15,7 @@ using SyncChat.API.Shared.AuthProviders.Contracts;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Events;
+using SyncChat.API.Shared.Notification.Contracts;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
@@ -33,6 +35,7 @@ public static class DependencyInjection
                     .AddOpenApiInternal()
                     .AddIdentityServicesInternal()
                     .AddSocketServicesInternal()
+                    .AddNotificationServices()
                     .AddSecurity()
                     .AddAuthProviders()
                     .AddStorage()
@@ -125,6 +128,13 @@ public static class DependencyInjection
     {
         services.AddSingleton<IUserConnectionManager, UserConnectionManager>();
         services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+        return services;
+    }
+
+    private static IServiceCollection AddNotificationServices(this IServiceCollection services)
+    {
+        services.AddScoped<IMessageNotificationService, SignalRMessageNotificationService>();
+
         return services;
     }
 
