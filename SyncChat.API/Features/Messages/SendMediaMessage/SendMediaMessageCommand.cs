@@ -121,3 +121,16 @@ public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMe
         await messageNotificationService.NotifyMessageCreatedAsync(notificationModel, cancellationToken);
     }
 }
+public sealed class SendMediaMessageCommandValidator : AbstractValidator<SendMediaMessageCommand>
+{
+    public SendMediaMessageCommandValidator()
+    {
+
+        RuleFor(x => x.ConversationId)
+            .GreaterThan(0).WithMessage("Conversation ID must be greater than 0.");
+
+        RuleFor(x => x.SenderId).GreaterThan(0).WithMessage("Sender ID must be greater than 0.");
+
+        RuleFor(x => x.Type).IsInEnum().WithMessage("Invalid message type.");
+    }
+}
