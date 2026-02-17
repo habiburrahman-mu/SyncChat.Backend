@@ -6,10 +6,11 @@ using SyncChat.API.Features.Messages.DTOs;
 using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace SyncChat.API.Features.Messages.SendMessage;
 
@@ -24,17 +25,14 @@ public sealed record SendMessageCommand(
 public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageCommand, SendMessageResponse>
 {
     private readonly ApplicationDbContext dbContext;
-    private readonly IHubContext<NotificationHub, INotificationClient> hub;
-    private readonly IUserConnectionManager userConnectionManager;
+    private readonly IMessageNotificationService messageNotificationService;
 
     public SendMessageCommandHandler(
         ApplicationDbContext applicationDbContext,
-        IHubContext<NotificationHub, INotificationClient> hub,
-        IUserConnectionManager userConnectionManager)
+        IMessageNotificationService messageNotificationService)
     {
         dbContext = applicationDbContext;
-        this.hub = hub;
-        this.userConnectionManager = userConnectionManager;
+        this.messageNotificationService = messageNotificationService;
     }
     public async Task<Result<SendMessageResponse>> HandleAsync(SendMessageCommand command, CancellationToken cancellationToken)
     {
@@ -66,7 +64,7 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
 
         await dbContext.Database.CommitTransactionAsync(cancellationToken);
 
-        await SendNotificationAsync(message, cancellationToken);
+        await SendNotificationAsync(message, sender, cancellationToken);
 
         return response;
     }
@@ -100,28 +98,24 @@ public sealed class SendMessageCommandHandler : ICommandHandler<SendMessageComma
         return message;
     }
 
-    private async Task SendNotificationAsync(Message message, CancellationToken cancellationToken)
+    private async Task SendNotificationAsync(Message message, User sender, CancellationToken cancellationToken)
     {
-        User? sender = await dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserID == message.SenderId, cancellationToken);
+        MessageNotificationModel notificationModel = new(
+                    MessageId: message.MessageId,
+                    Uuid: message.Uuid,
+                    ConversationId: message.ConversationId,
+                    SenderId: message.SenderId,
+                    SenderUserName: sender.UserName,
+                    SenderName: sender.Name,
+                    Type: message.Type,
+                    Content: message.Content,
+                    MediaId: message.MediaId,
+                    MetaData: message.MetaData,
+                    ReplyTo: message.ReplyTo,
+                    CreatedAt: message.CreatedAt,
+                    UpdatedAt: message.UpdatedAt);
 
-        if (sender is not null) message.Sender = sender;
-
-        IReadOnlyList<string> sendersConnections = userConnectionManager.GetConnections(message.SenderId.ToString());
-
-        await this.hub.Clients.GroupExcept(message.ConversationId.ToString(), sendersConnections)
-            .MessageReceived(message.ToDTO());
-
-        List<long> conversationMembers = await dbContext.ConversationMembers
-            .AsNoTracking()
-            .Where(x => x.ConversationId == message.ConversationId
-                    && x.IsActive && x.LeftAt == null
-                        && x.UserId != message.SenderId)
-            .Select(x => x.UserId)
-            .ToListAsync(cancellationToken);
-
-        var notificationTasks = conversationMembers.Select(userId => this.hub.Clients.User(userId.ToString()).HasNewMessage(message.ConversationId));
-
-        await Task.WhenAll(notificationTasks);
+        await messageNotificationService.NotifyMessageCreatedAsync(notificationModel, cancellationToken);
     }
 }
 
