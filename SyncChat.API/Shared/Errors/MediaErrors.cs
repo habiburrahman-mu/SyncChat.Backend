@@ -35,4 +35,12 @@ public static class MediaErrors
     public static Error NoUploadAttemptDetected(Guid mediaId) => Error.Validation(
         "Media.NoUploadAttemptDetected",
         $"No upload attempt detected for media with ID '{mediaId}'.");
+
+    public static Error MediaIsNotActive => Error.Validation(
+        "Media.MediaIsNotActive",
+        $"Selected media is not active and not ready to use.");
+
+    public static Error Forbidden => Error.Forbidden(
+        "Media.Forbidden",
+        $"You do not have necessary permission to perform this action.");
 }
