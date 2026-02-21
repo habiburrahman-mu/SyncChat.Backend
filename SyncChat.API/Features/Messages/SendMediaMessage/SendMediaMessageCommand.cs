@@ -17,10 +17,10 @@ public sealed record SendMediaMessageCommand(
     MessageType Type,
     Guid MediaId,
     string? Caption,
-    long? ReplyTo = null) : ICommand;
+    long? ReplyTo = null) : ICommand<SendMediaMessageResponse>;
 
 
-public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMessageCommand>
+public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMessageCommand, SendMediaMessageResponse>
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IMessageNotificationService messageNotificationService;
@@ -31,7 +31,7 @@ public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMe
         this.messageNotificationService = messageNotificationService;
     }
 
-    public async Task<Result> HandleAsync(SendMediaMessageCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<SendMediaMessageResponse>> HandleAsync(SendMediaMessageCommand command, CancellationToken cancellationToken = default)
     {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -45,20 +45,20 @@ public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMe
                cancellationToken);
 
         if (!isMember)
-            return Result.Failure(ConversationMemberErrors.Forbidden());
+            return Result.Failure<SendMediaMessageResponse>(ConversationMemberErrors.Forbidden());
 
         var media = await dbContext.Media
             .FirstOrDefaultAsync(m => m.Id == command.MediaId, cancellationToken);
 
         if (media is null)
-            return Result.Failure(MediaErrors.NotFound(command.MediaId));
+            return Result.Failure<SendMediaMessageResponse>(MediaErrors.NotFound(command.MediaId));
 
         if (media.State != MediaState.Active)
-            return Result.Failure(MediaErrors.MediaIsNotActive);
+            return Result.Failure<SendMediaMessageResponse>(MediaErrors.MediaIsNotActive);
 
         if (media.OwnerType != MediaOwnerType.Conversation ||
             media.OwnerId != command.ConversationId.ToString())
-            return Result.Failure(MediaErrors.Forbidden);
+            return Result.Failure<SendMediaMessageResponse>(MediaErrors.Forbidden);
 
         var message = new Message
         {
@@ -98,7 +98,21 @@ public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMe
 
         await SendNotificationAsync(message, sender, cancellationToken);
 
-        return Result.Success();
+        SendMediaMessageResponse response = new(
+            MessageId: message.MessageId,
+            Uuid: message.Uuid,
+            ConversationId: message.ConversationId,
+            SenderId: message.SenderId,
+            Type: message.Type,
+            MediaId: message.MediaId.Value,
+            Content: message.Content,
+            SenderUserName: sender.UserName,
+            SenderByName: sender.Name,
+            UpdatedAt: message.UpdatedAt,
+            MetaData: message.MetaData,
+            ReplyTo: message.ReplyTo);
+
+        return response;
     }
 
     private async Task SendNotificationAsync(Message message, User sender, CancellationToken cancellationToken)
