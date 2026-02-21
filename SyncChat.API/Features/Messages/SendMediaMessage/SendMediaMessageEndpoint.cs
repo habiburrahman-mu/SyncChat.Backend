@@ -38,6 +38,8 @@ public sealed class SendMediaMessageEndpoint : IMessageEndpoint
             })
             .WithSummary("Send Media Message")
             .Produces<SendMediaMessageResponse>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest);
     }
 }
