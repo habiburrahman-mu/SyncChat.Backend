@@ -82,12 +82,14 @@ public sealed class OutboxDispatcher : BackgroundService
 
         var messages = await dbContext.OutboxMessages
             .FromSqlRaw(@"
-                SELECT TOP ({0}) *
-                FROM OutboxMessages WITH (UPDLOCK, READPAST)
-                WHERE ProcessedAt IS NULL
-                  AND (ClaimedAt IS NULL OR ClaimedAt < {1})
-                ORDER BY OccurredAt
-            ", batchSize, now - ClaimTimeout)
+                SELECT *
+                FROM ""OutboxMessages""
+                WHERE ""ProcessedAt"" IS NULL
+                  AND (""ClaimedAt"" IS NULL OR ""ClaimedAt"" < {0})
+                ORDER BY ""OccurredAt""
+                LIMIT {1}
+                FOR UPDATE SKIP LOCKED
+            ", now - ClaimTimeout, batchSize)
             .ToListAsync(cancellationToken);
 
         messages.ForEach(m =>
