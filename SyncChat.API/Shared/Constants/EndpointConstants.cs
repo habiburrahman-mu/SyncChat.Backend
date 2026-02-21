@@ -52,6 +52,7 @@ public class EndpointConstants
         public const string Base = "message";
         public const string GetList = "/getList";
         public const string Send = "/send";
+        public const string SendMedia = "/sendMedia";
     }
 
     public static class MediaRoute

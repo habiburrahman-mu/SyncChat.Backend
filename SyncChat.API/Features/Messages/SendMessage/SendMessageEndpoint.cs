@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
-using SyncChat.API.Features.Messages.GetMessages;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -18,7 +17,7 @@ public sealed record SendMessageRequest(
 );
 
 
-public class SendMessageEndpoint : IMessageEndpoint
+public sealed class SendMessageEndpoint : IMessageEndpoint
 {
     public void Map(RouteGroupBuilder group)
     {
