@@ -26,6 +26,11 @@ public interface IBlobStorage
         TimeSpan validFor,
         CancellationToken cancellationToken);
 
+    Task<string> GeneratePresignedDownloadUrlAsync(
+        string objectName,
+        TimeSpan validFor,
+        CancellationToken cancellationToken);
+
     Task<BlobMetadata?> GetMetadataAsync(
         string objectName, 
         CancellationToken cancellationToken);

@@ -2,6 +2,7 @@
 using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
+using Minio.Exceptions;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Storage.Contracts;
 using SyncChat.API.Shared.Storage.Contracts.Models;
@@ -107,6 +108,30 @@ public sealed class MinioBlobStorage : IBlobStorage
         return url;
     }
 
+    public async Task<string> GeneratePresignedDownloadUrlAsync(
+        string objectName,
+        TimeSpan validFor,
+        CancellationToken cancellationToken)
+    {
+        var exists = await minioClient.StatObjectAsync(
+            new StatObjectArgs()
+                .WithBucket(storageSettings.Bucket)
+                .WithObject(objectName),
+            cancellationToken);
+
+        if (exists is null)
+            throw new FileNotFoundException("Object not found in storage.");
+
+        var presignedGetObjectArgs = new PresignedGetObjectArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithObject(objectName)
+            .WithExpiry((int)validFor.TotalSeconds);
+
+        string url = await minioClient.PresignedGetObjectAsync(presignedGetObjectArgs);
+
+        return url;
+    }
+
     public async Task<BlobMetadata?> GetMetadataAsync(string objectName, CancellationToken cancellationToken)
     {
         StatObjectArgs statObjectArgs = new StatObjectArgs()
@@ -115,7 +140,7 @@ public sealed class MinioBlobStorage : IBlobStorage
 
         ObjectStat? stat = await minioClient.StatObjectAsync(statObjectArgs, cancellationToken);
 
-        if(stat is null) return null;
+        if (stat is null) return null;
 
         return new BlobMetadata(
             ObjectName: stat.ObjectName,
