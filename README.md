@@ -1,1 +1,438 @@
 # SyncChat.Backend
+
+A real-time chat backend API built with **.NET 9** and **ASP.NET Core Minimal API**, featuring a custom mediator pipeline, vertical slice architecture, SignalR-powered live messaging, and a transactional outbox for reliable event delivery.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | .NET 9 / C# 13 |
+| Web Framework | ASP.NET Core Minimal API |
+| ORM | Entity Framework Core + Npgsql |
+| Database | PostgreSQL |
+| Real-time | SignalR |
+| Auth | JWT Bearer + Refresh Tokens + Google OAuth |
+| Validation | FluentValidation |
+| Object Storage | MinIO |
+| API Docs | Scalar (OpenAPI) |
+
+---
+
+## Architecture
+
+### Vertical Slice / Feature-based
+Each feature lives in its own self-contained folder under `Features/`. A typical feature slice contains:
+
+```
+Features/
+└── {Domain}/
+    └── {FeatureName}/
+        ├── {Feature}Command.cs   ← Command record + Handler + Validator (co-located)
+        ├── {Feature}Query.cs     ← Query record + Handler (co-located)
+        ├── {Feature}Endpoint.cs  ← Minimal API endpoint + Request DTO
+        └── {Feature}Response.cs  ← Response record
+```
+
+### Custom Mediator (No MediatR)
+The project uses a hand-rolled mediator instead of MediatR:
+
+- **Commands** implement `ICommand` or `ICommand<TResponse>`
+- **Queries** implement `IQuery` or `IQuery<TResponse>`
+- **Handlers** implement `ICommandHandler<TCmd, TResp>` or `IQueryHandler<TQuery, TResp>`
+- `CommandSender` / `QuerySender` resolve handlers via `IServiceProvider` and run FluentValidation **before** dispatching to the handler
+
+```csharp
+// In an endpoint
+Result<SendMessageResponse> result = await sender.SendAsync(command, cancellationToken);
+return result.Match(
+    response => Results.Created("", response),
+    CustomResults.Problem);
+```
+
+### Result Pattern
+All handlers return `Result` or `Result<T>` — no exceptions for expected failures:
+
+- `Error` record with typed `ErrorType` (Validation, NotFound, Conflict, Forbidden, Unauthorized)
+- `ValidationError` aggregates multiple FluentValidation errors
+- `Result<T>.Match()` for functional-style branching at the endpoint layer
+- `CustomResults.Problem()` maps errors to RFC 7807 `ProblemDetails`
+
+### Endpoint Registration
+Endpoints are discovered and registered automatically via reflection:
+
+1. A marker interface per domain group (e.g., `IMessageEndpoint : IEndpoint`) is decorated with `[RouteGroupPrefix("message", "Message", HasAuthorization = true)]`
+2. `EndpointRegistrar.RegisterEndpoints()` scans the assembly, creates route groups, and maps all endpoint implementations
+
+### Transactional Outbox
+Domain events are persisted to an `OutboxMessages` table inside the same DB transaction as the business operation, then dispatched asynchronously by `OutboxDispatcher` (a `BackgroundService`) using `FOR UPDATE SKIP LOCKED` for safe concurrent processing.
+
+---
+
+## Project Structure
+
+```
+SyncChat.Backend/
+├── SyncChat.API/
+│   ├── Features/                  ← Vertical slices
+│   │   ├── Auth/                  ← Login, Register, Refresh, Logout, Google OAuth
+│   │   ├── Conversations/         ← Create, List, Detail, MarkAsSeen, LastMessage
+│   │   ├── ConversationMembers/   ← Add, Remove, MakeAdmin, RemoveAdminStatus, List
+│   │   ├── Messages/              ← Send, SendMedia, GetMessages
+│   │   ├── MediaManagement/       ← InitiateUpload, ConfirmUpload, MediaUploaded event
+│   │   ├── Notifications/         ← SignalR hub + INotificationClient
+│   │   └── Users/                 ← Detail, ByUserName, Update, MetaData
+│   ├── Host/                      ← Assembly scanning (RequestDiscovery, EventDiscovery)
+│   ├── Infrastructure/
+│   │   ├── Persistence/           ← ApplicationDbContext, EF Configurations, Migrations
+│   │   ├── Security/              ← JWT, PasswordHasher, RefreshToken management
+│   │   ├── Notification/          ← SignalRMessageNotificationService
+│   │   ├── Outbox/                ← OutboxEventPublisher, OutboxDispatcher
+│   │   ├── Storage/               ← MinioBlobStorage
+│   │   ├── Socket/                ← UserConnectionManager
+│   │   ├── AuthProviders/         ← GoogleTokenValidator
+│   │   ├── Exceptions/            ← GlobalExceptionHandler
+│   │   └── DependencyInjection.cs
+│   ├── Routing/                   ← IEndpoint, EndpointRegistrar, RouteGroupPrefixAttribute
+│   ├── Shared/
+│   │   ├── Entities/              ← EF Core POCO entities
+│   │   ├── Sender/Contracts/      ← ICommand, IQuery, ICommandHandler, IQueryHandler, ISender
+│   │   ├── Sender/Internal/       ← CommandSender, QuerySender
+│   │   ├── ResultHandling/        ← Result<T>, Error, ValidationError, CustomResults
+│   │   ├── Errors/                ← Domain error factories (per domain area)
+│   │   ├── Events/                ← IDomainEvent, IDomainEventHandler, IDomainEventPublisher
+│   │   ├── Notification/          ← IMessageNotificationService + models
+│   │   ├── Security/              ← IIdentityService, ITokenProvider, IPasswordHasher
+│   │   ├── Socket/                ← IUserConnectionManager
+│   │   ├── Storage/               ← IBlobStorage
+│   │   ├── Configuration/         ← JWTSettings, GoogleAuthSettings, StorageSettings
+│   │   ├── Constants/             ← Route constants (EndpointConstants)
+│   │   └── Utilities/             ← SystemMessageHelper
+│   └── Program.cs
+└── SyncChat.Test/
+```
+
+---
+
+## Domain Model
+
+### Conversation Types
+| Type | Description |
+|---|---|
+| `Direct` | 1-to-1 private chat between two users |
+| `Group` | Multi-member group chat |
+| `Channel` | Broadcast-style channel |
+
+### Message Types
+| Type | Description |
+|---|---|
+| `Text` | Plain text message |
+| `Image` / `Video` / `File` | Media message (paired with a `MediaReference`) |
+| `System` | Auto-generated system message (e.g., group created, member added) stored as JSON in `MetaData` |
+
+### Member Roles
+| Role | Description |
+|---|---|
+| `Member` | Standard participant |
+| `Admin` | Can add/remove members |
+| `Owner` | Creator of the conversation — assigned automatically on creation |
+
+### Message Delivery Status
+| Status | Description |
+|---|---|
+| `Sent` | Message persisted; a `MessageStatus` row is created for the sender immediately |
+| `Delivered` | Message received by the recipient's device |
+| `Read` | Recipient has seen the message (`LastSeenMessageId` updated on `ConversationMember`) |
+
+### Key Entity Relationships
+```
+User ──< ConversationMember >── Conversation
+                                     │
+                               Message (LastMessageId FK)
+                                     │
+                          ┌──────────┴──────────┐
+                     MessageStatus         MediaReference ── Media
+```
+
+---
+
+## Authentication
+
+### Overview
+The system supports two authentication providers, backed by a `UserAuthProvider` entity that links a user account to one or more external identity sources.
+
+| Provider | `AuthProvider` enum value | Description |
+|---|---|---|
+| Local | `Local` | Username + password (bcrypt-hashed via `IPasswordHasher`) |
+| Google | `Google` | Google ID token validated via `IGoogleTokenValidator` |
+
+A single user account can have multiple auth providers linked (e.g., local + Google pointing to the same `User` row).
+
+---
+
+### Token Strategy
+
+The system uses a **dual-token** scheme:
+
+#### Access Token (JWT)
+- Short-lived, signed with **HMAC-SHA256** (`AccessTokenSecret`)
+- Carries claims: `sub` (userId), `email`
+- Sent as plain JSON in the response body on login/refresh
+- Used as a `Bearer` token in the `Authorization` header for all protected routes
+- For **SignalR** connections, passed via query string: `?access_token=<token>`
+
+#### Refresh Token
+- Long-lived, cryptographically random (64 bytes via `RandomNumberGenerator`)
+- **Never stored in plaintext** — hashed with **HMAC-SHA256** (`RefreshTokenSecret`) before persisting to the `RefreshTokens` table
+- Delivered to the client exclusively via an **HttpOnly cookie** (`refreshToken`) to prevent XSS access
+- On every `/refresh` call the old token is revoked and a new token pair is issued (**token rotation**)
+
+---
+
+### Device-aware Sessions
+Every token is bound to a `DeviceIdentifier` supplied by the client at login time. This means:
+- Each device gets its own independent refresh token row
+- Logout on one device does not affect sessions on other devices
+- `LogoutAll` revokes all active tokens across every device for the user
+
+---
+
+### Auth Flows
+
+#### Registration (`POST /api/auth/register`)
+1. Validates username and email uniqueness (case-insensitive via `ILike`)
+2. Hashes password and creates `User` + `UserAuthProvider` (provider = `Local`)
+3. Returns the new user's `UUID`
+
+#### Login (`POST /api/auth/login`)
+1. Looks up `UserAuthProvider` with `Provider = Local` and matches username (case-insensitive)
+2. Verifies password hash
+3. Issues JWT access token + refresh token; stores hashed refresh token in DB per `DeviceIdentifier`
+4. Sets the refresh token in an **HttpOnly cookie**; returns the raw access token in the response body
+
+#### Google OAuth (`POST /api/auth/googleAuth`)
+1. Validates the Google `IdToken` via `GoogleTokenValidator`
+2. Finds or creates the `User` account by Google email
+3. Links a `UserAuthProvider` (provider = `Google`) if not already linked
+4. Issues the same JWT + refresh token pair as the local login flow
+
+#### Token Refresh (`POST /api/auth/refresh`)
+1. Reads the refresh token from the **HttpOnly cookie** (never from the request body)
+2. Hashes and compares against the DB record, validates expiry and `DeviceIdentifier`
+3. Rotates: revokes old token, persists new hashed token, returns new access token
+
+#### Logout (`POST /api/auth/logout`)
+- Revokes the refresh token for the current device (sets `RevokedAt`)
+
+#### Logout All (`POST /api/auth/logoutAll`)
+- Revokes **all** active refresh tokens for the user across every device
+
+---
+
+### Token Cleanup
+`RefreshTokenCleanupService` is a `BackgroundService` that runs every **24 hours** and bulk-deletes all rows where `RevokedAt IS NOT NULL` or `ExpiresAt < NOW()`, keeping the `RefreshTokens` table lean.
+
+---
+
+### Configuration Reference
+
+```json
+"JWT": {
+  "Issuer": "SyncChat",
+  "Audience": "SyncChat",
+  "AccessTokenSecret": "min-32-char-secret-for-access-token",
+  "RefreshTokenSecret": "min-32-char-secret-for-refresh-token",
+  "AccessTokenExpirationInMinutes": 60,
+  "RefreshTokenExpirationInMinutes": 43200
+}
+```
+
+---
+
+## API Endpoints
+
+| Group | Method | Route | Description |
+|---|---|---|---|
+| **Auth** | POST | `/api/auth/register` | Register a new user |
+| | POST | `/api/auth/login` | Login with username & password |
+| | POST | `/api/auth/refresh` | Refresh access token |
+| | POST | `/api/auth/logout` | Logout current device |
+| | POST | `/api/auth/logoutAll` | Logout all devices |
+| | POST | `/api/auth/googleAuth` | Authenticate via Google |
+| **User** | GET | `/api/user/getByUserName` | Get user by username |
+| | GET | `/api/user/getDetail` | Get user detail |
+| | PUT | `/api/user/update` | Update user profile |
+| | GET | `/api/user/getMetaData` | Get user metadata |
+| **Conversation** | GET | `/api/conversation/getList` | Get user's conversations |
+| | POST | `/api/conversation/create` | Create a conversation |
+| | GET | `/api/conversation/getDetail` | Get conversation detail |
+| | GET | `/api/conversation/getLastMessage` | Get last message |
+| | POST | `/api/conversation/MarkMessageAsSeen` | Mark message as seen |
+| **ConversationMember** | GET | `/api/conversationMember/getList` | List members |
+| | POST | `/api/conversationMember/add` | Add a member |
+| | DELETE | `/api/conversationMember/remove` | Remove a member |
+| | POST | `/api/conversationMember/makeAdmin` | Promote member to admin |
+| | POST | `/api/conversationMember/removeAdminStatus` | Demote admin |
+| **Message** | GET | `/api/message/getList` | Get paginated messages |
+| | POST | `/api/message/send` | Send a text message |
+| | POST | `/api/message/sendMedia` | Send a media message |
+| **Media** | POST | `/api/media/initiate` | Initiate a media upload |
+| | POST | `/api/media/confirm` | Confirm upload completion |
+| **SignalR Hub** | — | `/hub/notifications` | Real-time notification hub |
+
+> All routes except `Auth` require a valid JWT Bearer token.
+
+---
+
+## Media Upload Flow
+
+Media is uploaded via a **two-phase presigned URL** pattern to avoid routing binary data through the API server.
+
+```
+Client                     API                        MinIO
+  │                         │                           │
+  │── POST /media/initiate ─>│                           │
+  │                         │── create Media row        │
+  │                         │── generate presigned URL ─>│
+  │<── { mediaId, uploadUri, expiration } ──────────────│
+  │                         │                           │
+  │── PUT {uploadUri} (binary) ──────────────────────>  │
+  │<── 200 OK ──────────────────────────────────────────│
+  │                         │                           │
+  │── POST /media/confirm ──>│                           │
+  │                         │── verify blob exists      │
+  │                         │── validate size + MIME    │
+  │                         │── set state = Uploaded    │
+  │                         │── publish MediaUploadedEvent (Outbox)
+  │<── { mediaId, state } ──│                           │
+```
+
+### Media Lifecycle (`MediaState`)
+| State | Description |
+|---|---|
+| `Initiated` | DB row created; upload not yet completed |
+| `Uploaded` | Binary confirmed in MinIO |
+| `Active` | Transition set by `MediaUploadedEventHandler` via the Outbox |
+| `Attached` | At least one `MediaReference` links this media to a message |
+| `Deleting` / `Deleted` | Async deletion in progress or completed |
+| `Failed` | Upload or processing failed |
+
+The `MediaUploadedEvent` is published via the **Transactional Outbox** on confirm, and handled by `MediaUploadedEventHandler` which transitions the state to `Active`. This decouples post-upload processing (thumbnail generation, validation) from the HTTP request.
+
+---
+
+## Real-time Events (SignalR)
+
+Clients connect to `/hub/notifications` and receive the following events via `INotificationClient`:
+
+| Event | Description |
+|---|---|
+| `MessageReceived` | A new message was sent to a conversation |
+| `HasNewMessage` | Unread message indicator for a conversation |
+| `NewConversationCreated` | A new conversation was created for the user |
+| `AddedToConversation` | User was added to an existing conversation |
+| `RemovedFromConversation` | User was removed from a conversation |
+| `MemberRemoved` | Another member was removed |
+| `PromotedToAdmin` | User was promoted to admin |
+| `MemberRoleChanged` | A member's role changed |
+| `MemberDemoted` | A member was demoted |
+| `TypingStarted` / `TypingStopped` | Typing indicators |
+
+---
+
+## Getting Started
+
+### Prerequisites
+- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- PostgreSQL instance
+- MinIO instance (or S3-compatible storage)
+
+### Configuration
+Update `appsettings.json` (or use user secrets / environment variables):
+
+```json
+{
+  "ConnectionStrings": {
+    "Default": "Host=localhost;Database=syncchat;Username=postgres;Password=yourpassword"
+  },
+  "JWT": {
+    "Issuer": "SyncChat",
+    "Audience": "SyncChat",
+    "AccessTokenSecret": "min-32-char-secret-for-access-token",
+    "RefreshTokenSecret": "min-32-char-secret-for-refresh-token",
+    "AccessTokenExpirationInMinutes": 60,
+    "RefreshTokenExpirationInMinutes": 43200
+  },
+  "GoogleAuth": {
+    "ClientId": "your-google-client-id"
+  },
+  "Storage": {
+    "Endpoint": "localhost",
+    "Port": 9000,
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin",
+    "Bucket": "syncchat",
+    "UseSSL": false
+  }
+}
+```
+
+### Run Locally
+
+```bash
+# Restore dependencies
+dotnet restore
+
+# Apply database migrations (auto-applied on startup in Development)
+dotnet ef database update --project SyncChat.API
+
+# Run the API
+dotnet run --project SyncChat.API
+```
+
+API docs (Scalar UI) are available at `https://localhost:{port}/scalar` in Development mode.
+
+### Run with Docker Compose
+The repository includes a `docker-compose.yml` that provisions the full stack — API, PostgreSQL, and MinIO — in a single command:
+
+```bash
+docker-compose up --build
+```
+
+| Service | Port | Description |
+|---|---|---|
+| `syncchat.api` | `5000` (HTTP), `5001` (HTTPS) | ASP.NET Core API |
+| `postgres` | `5432` | PostgreSQL database |
+| `minio` | `9000` (S3 API), `9001` (Admin Console) | Object storage |
+
+Environment variables in `docker-compose.yml` wire the API directly to the Postgres and MinIO containers — no manual `appsettings.json` changes needed for a local Docker run.
+
+---
+
+## Testing
+
+The `SyncChat.Test` project uses **xUnit** with **FluentAssertions** and is currently focused on infrastructure-level unit tests:
+
+| Test Class | Coverage |
+|---|---|
+| `PasswordHasherTests` | Hash produces valid output, rejects empty input, `Verify` returns correct results |
+| `TokenProviderTests` | Access token is non-empty, contains expected `sub`/`email` claims, correct issuer/audience |
+
+Tests use an `IClassFixture<TokenProviderTestFixture>` to share a configured `TokenProvider` and a pre-built test `User` across test methods.
+
+```bash
+dotnet test
+```
+
+---
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| Custom mediator over MediatR | Full control over the pipeline; FluentValidation wired directly in the sender |
+| Vertical slice over layered | Features are co-located — easier to navigate, modify, and reason about in isolation |
+| Result pattern over exceptions | Predictable control flow for expected failures without try/catch overhead |
+| Outbox pattern for domain events | Guarantees at-least-once event delivery even if downstream services fail |
+| Interface-based endpoint discovery | Zero-registration boilerplate — new endpoints are picked up automatically |
