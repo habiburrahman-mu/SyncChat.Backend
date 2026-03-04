@@ -149,4 +149,22 @@ public sealed class MinioBlobStorage : IBlobStorage
             ETag: stat.ETag
         );
     }
+
+    public async Task<IReadOnlyList<string>> ListObjectKeysAsync(string prefix, CancellationToken cancellationToken)
+    {
+        ListObjectsArgs args = new ListObjectsArgs()
+            .WithBucket(storageSettings.Bucket)
+            .WithPrefix(prefix)
+            .WithRecursive(true);
+
+        List<string> keys = [];
+
+        await foreach (Item item in minioClient.ListObjectsEnumAsync(args, cancellationToken))
+        {
+            if (!item.IsDir)
+                keys.Add(item.Key);
+        }
+
+        return keys;
+    }
 }

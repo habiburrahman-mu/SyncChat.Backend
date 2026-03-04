@@ -34,4 +34,8 @@ public interface IBlobStorage
     Task<BlobMetadata?> GetMetadataAsync(
         string objectName, 
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<string>> ListObjectKeysAsync(
+        string prefix,
+        CancellationToken cancellationToken);
 }
