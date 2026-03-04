@@ -89,7 +89,7 @@ SyncChat.Backend/
 │   │   ├── Security/              ← JWT, PasswordHasher, RefreshToken management
 │   │   ├── Notification/          ← SignalRMessageNotificationService
 │   │   ├── Outbox/                ← OutboxEventPublisher, OutboxDispatcher
-│   │   ├── Storage/               ← MinioBlobStorage, MediaCleanupService
+│   │   ├── Storage/               ← MinioBlobStorage, StaleMediaCleanupService, OrphanBlobCleanupService
 │   │   ├── Socket/                ← UserConnectionManager
 │   │   ├── AuthProviders/         ← GoogleTokenValidator
 │   │   ├── Exceptions/            ← GlobalExceptionHandler
@@ -344,13 +344,18 @@ Presigned URLs have a **15-minute TTL**. Clients should use `expiresAt` to cache
 
 The `MediaUploadedEvent` is published via the **Transactional Outbox** on confirm, and handled by `MediaUploadedEventHandler` which transitions the state to `Active`. This decouples post-upload processing (thumbnail generation, validation) from the HTTP request.
 
-### Background Cleanup (`MediaCleanupService`)
-`MediaCleanupService` is a `BackgroundService` that runs every **30 minutes** and performs two housekeeping tasks:
+### Background Cleanup
+Two independent `BackgroundService` instances handle media housekeeping:
 
-| Task | Trigger | Action |
-|---|---|---|
-| **Stale `Initiated`** | `State == Initiated` and `CreatedAt < now - 2h` | Deletes the blob (if any), then removes the DB row. The 2-hour window gives a safe buffer beyond the 1-hour upload session TTL. |
-| **Orphaned blobs** | Object key under `media/` prefix has no matching `Media` row | Lists all keys from MinIO, cross-references against the DB in one query, deletes unrecognised keys. |
+#### `StaleMediaCleanupService` — every 30 minutes
+| Trigger | Action |
+|---|---|
+| `State == Initiated` and `CreatedAt < now - 2h` | Deletes the blob (if any, swallows not-found), then removes the DB row. The 2-hour window gives a safe buffer beyond the 1-hour upload session TTL. |
+
+#### `OrphanBlobCleanupService` — every 24 hours
+| Trigger | Action |
+|---|---|
+| Object key under `media/` prefix has no matching `Media` row | Streams MinIO keys in batches of 200, cross-references DB in one query per batch, deletes unrecognised keys. |
 
 ---
 
