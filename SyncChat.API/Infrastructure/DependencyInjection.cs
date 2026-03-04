@@ -177,7 +177,8 @@ public static class DependencyInjection
 
     private static IServiceCollection AddMediaServices(this IServiceCollection services)
     {
-        services.AddHostedService<MediaCleanupService>();
+        services.AddHostedService<StaleMediaCleanupService>();
+        services.AddHostedService<OrphanBlobCleanupService>();
 
         return services;
     }

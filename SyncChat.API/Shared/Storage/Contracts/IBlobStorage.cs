@@ -35,7 +35,7 @@ public interface IBlobStorage
         string objectName, 
         CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<string>> ListObjectKeysAsync(
+    IAsyncEnumerable<string> ListObjectKeysAsync(
         string prefix,
         CancellationToken cancellationToken);
 }

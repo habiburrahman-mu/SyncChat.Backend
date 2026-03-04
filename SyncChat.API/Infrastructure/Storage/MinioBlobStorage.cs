@@ -150,21 +150,19 @@ public sealed class MinioBlobStorage : IBlobStorage
         );
     }
 
-    public async Task<IReadOnlyList<string>> ListObjectKeysAsync(string prefix, CancellationToken cancellationToken)
+    public async IAsyncEnumerable<string> ListObjectKeysAsync(
+        string prefix,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ListObjectsArgs args = new ListObjectsArgs()
             .WithBucket(storageSettings.Bucket)
             .WithPrefix(prefix)
             .WithRecursive(true);
 
-        List<string> keys = [];
-
         await foreach (Item item in minioClient.ListObjectsEnumAsync(args, cancellationToken))
         {
             if (!item.IsDir)
-                keys.Add(item.Key);
+                yield return item.Key;
         }
-
-        return keys;
     }
 }
