@@ -60,5 +60,6 @@ public class EndpointConstants
         public const string Base = "media";
         public const string InitiateUpload = "/initiateUpload";
         public const string ConfirmUpload = "/confirmUpload";
+        public const string GetAccessUrl = "/getAccessUrl";
     }
 }
