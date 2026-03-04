@@ -39,6 +39,7 @@ public static class DependencyInjection
                     .AddSecurity()
                     .AddAuthProviders()
                     .AddStorage()
+                    .AddMediaServices()
                     .AddOutboxServices();
 
 
@@ -170,6 +171,13 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorage, MinioBlobStorage>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddMediaServices(this IServiceCollection services)
+    {
+        services.AddHostedService<MediaCleanupService>();
 
         return services;
     }
