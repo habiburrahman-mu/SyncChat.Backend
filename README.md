@@ -80,7 +80,7 @@ SyncChat.Backend/
 │   │   ├── Conversations/         ← Create, List, Detail, MarkAsSeen, LastMessage
 │   │   ├── ConversationMembers/   ← Add, Remove, MakeAdmin, RemoveAdminStatus, List
 │   │   ├── Messages/              ← Send, SendMedia, GetMessages
-│   │   ├── MediaManagement/       ← InitiateUpload, ConfirmUpload, MediaUploaded event
+│   │   ├── MediaManagement/       ← InitiateUpload, ConfirmUpload, GetAccessUrl, MediaUploaded event
 │   │   ├── Notifications/         ← SignalR hub + INotificationClient
 │   │   └── Users/                 ← Detail, ByUserName, Update, MetaData
 │   ├── Host/                      ← Assembly scanning (RequestDiscovery, EventDiscovery)
@@ -279,6 +279,7 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 | | POST | `/api/message/sendMedia` | Send a media message |
 | **Media** | POST | `/api/media/initiate` | Initiate a media upload |
 | | POST | `/api/media/confirm` | Confirm upload completion |
+| | GET | `/api/media/getAccessUrl?mediaId={guid}` | Get a short-lived presigned download URL |
 | **SignalR Hub** | — | `/hub/notifications` | Real-time notification hub |
 
 > All routes except `Auth` require a valid JWT Bearer token.
@@ -307,6 +308,29 @@ Client                     API                        MinIO
   │                         │── publish MediaUploadedEvent (Outbox)
   │<── { mediaId, state } ──│                           │
 ```
+
+### Accessing Media (`GET /api/media/getAccessUrl`)
+Once media reaches `Active` or `Attached` state, clients request a **short-lived presigned download URL**:
+
+```
+Client                     API                        MinIO
+  │                         │                           │
+  │── GET /media/getAccessUrl?mediaId={id} ──>│         │
+  │                         │── load Media row          │
+  │                         │── check state (Active/Attached)
+  │                         │── verify membership/ownership
+  │                         │── generate presigned URL ─>│
+  │<── { mediaId, url, expiresAt } ──────────────────────│
+  │                         │                           │
+  │── GET {url} ────────────────────────────────────────>│
+  │<── binary blob ──────────────────────────────────────│
+```
+
+**Access check** — two-branch logic:
+- `OwnerType == Conversation` → verifies current user is an active member of the owning conversation
+- All other owner types → verifies current user is the original uploader (`User.UUID == Media.UserId`)
+
+Presigned URLs have a **15-minute TTL**. Clients should use `expiresAt` to cache and know when to re-fetch.
 
 ### Media Lifecycle (`MediaState`)
 | State | Description |
