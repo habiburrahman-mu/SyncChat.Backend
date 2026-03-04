@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
@@ -37,7 +38,7 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
             return Result.Failure<InitiateUploadResponse>(UserErrors.NotFound(currentUserId));
 
         Guid mediaId = Guid.NewGuid();
-        string storageKey = $"media/{mediaId}";
+        string storageKey = StorageConstants.MediaKeys.For(mediaId);
 
         Media media = new()
         {

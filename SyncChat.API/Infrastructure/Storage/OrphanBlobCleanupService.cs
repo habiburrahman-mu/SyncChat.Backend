@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Infrastructure.Persistence;
+using SyncChat.API.Shared.Constants;
 using SyncChat.API.Shared.Storage.Contracts;
 
 namespace SyncChat.API.Infrastructure.Storage;
@@ -9,7 +10,6 @@ public sealed class OrphanBlobCleanupService(
     IServiceScopeFactory serviceScopeFactory) : BackgroundService
 {
     private static readonly TimeSpan RunInterval = TimeSpan.FromHours(24);
-    private const string MediaBlobPrefix = "media/";
     private const int BatchSize = 200;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -39,7 +39,7 @@ public sealed class OrphanBlobCleanupService(
         int deletedCount = 0;
         List<string> batch = new(BatchSize);
 
-        await foreach (string key in blobStorage.ListObjectKeysAsync(MediaBlobPrefix, cancellationToken))
+        await foreach (string key in blobStorage.ListObjectKeysAsync(StorageConstants.MediaKeys.Prefix, cancellationToken))
         {
             batch.Add(key);
 
