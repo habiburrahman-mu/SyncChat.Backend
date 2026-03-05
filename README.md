@@ -65,8 +65,13 @@ Endpoints are discovered and registered automatically via reflection:
 1. A marker interface per domain group (e.g., `IMessageEndpoint : IEndpoint`) is decorated with `[RouteGroupPrefix("message", "Message", HasAuthorization = true)]`
 2. `EndpointRegistrar.RegisterEndpoints()` scans the assembly, creates route groups, and maps all endpoint implementations
 
-### Transactional Outbox
-Domain events are persisted to an `OutboxMessages` table inside the same DB transaction as the business operation, then dispatched asynchronously by `OutboxDispatcher` (a `BackgroundService`) using `FOR UPDATE SKIP LOCKED` for safe concurrent processing.
+### Transactional Outbox + Immediate Channel Dispatch
+Domain events follow a **two-track dispatch** strategy:
+
+1. **Outbox persistence** — events are written to the `OutboxMessages` table inside the same DB transaction as the business operation, guaranteeing at-least-once delivery.
+2. **Immediate in-process dispatch** — after the transaction commits, buffered events are pushed to a .NET `Channel<IDomainEvent>` and picked up instantly by `ImmediateEventDispatcher`, eliminating the polling delay for the happy path.
+
+If immediate dispatch fails, `OutboxDispatcher` (a `BackgroundService` using `FOR UPDATE SKIP LOCKED`) picks up the unprocessed outbox message on its next polling cycle as a fallback.
 
 ---
 
@@ -88,7 +93,7 @@ SyncChat.Backend/
 │   │   ├── Persistence/           ← ApplicationDbContext, EF Configurations, Migrations
 │   │   ├── Security/              ← JWT, PasswordHasher, RefreshToken management
 │   │   ├── Notification/          ← SignalRMessageNotificationService
-│   │   ├── Outbox/                ← OutboxEventPublisher, OutboxDispatcher
+│   │   ├── Outbox/                ← OutboxImmediateEventPublisher, OutboxDispatcher, DomainEventChannel, ImmediateEventDispatcher
 │   │   ├── Storage/               ← MinioBlobStorage, StaleMediaCleanupService, OrphanBlobCleanupService
 │   │   ├── Socket/                ← UserConnectionManager
 │   │   ├── AuthProviders/         ← GoogleTokenValidator
@@ -305,7 +310,9 @@ Client                     API                        MinIO
   │                         │── verify blob exists      │
   │                         │── validate size + MIME    │
   │                         │── set state = Uploaded    │
-  │                         │── publish MediaUploadedEvent (Outbox)
+  │                         │── persist MediaUploadedEvent (Outbox)
+  │                         │── commit transaction      │
+  │                         │── dispatch via Channel (immediate)
   │<── { mediaId, state } ──│                           │
 ```
 
@@ -342,7 +349,7 @@ Presigned URLs have a **15-minute TTL**. Clients should use `expiresAt` to cache
 | `Deleting` / `Deleted` | Async deletion in progress or completed |
 | `Failed` | Upload or processing failed |
 
-The `MediaUploadedEvent` is published via the **Transactional Outbox** on confirm, and handled by `MediaUploadedEventHandler` which transitions the state to `Active`. This decouples post-upload processing (thumbnail generation, validation) from the HTTP request.
+The `MediaUploadedEvent` is persisted to the **Transactional Outbox** and immediately dispatched via a .NET **Channel** after the transaction commits. `MediaUploadedEventHandler` transitions the state to `Active`. If immediate dispatch fails, `OutboxDispatcher` retries on the next polling cycle. This keeps post-upload processing decoupled from the HTTP request while avoiding polling delay for users.
 
 ### Background Cleanup
 Two independent `BackgroundService` instances handle media housekeeping:
@@ -471,5 +478,5 @@ dotnet test
 | Custom mediator over MediatR | Full control over the pipeline; FluentValidation wired directly in the sender |
 | Vertical slice over layered | Features are co-located — easier to navigate, modify, and reason about in isolation |
 | Result pattern over exceptions | Predictable control flow for expected failures without try/catch overhead |
-| Outbox pattern for domain events | Guarantees at-least-once event delivery even if downstream services fail |
+| Outbox + Channel for domain events | Outbox guarantees at-least-once delivery; in-process `Channel<T>` provides immediate dispatch after commit, with outbox as fallback |
 | Interface-based endpoint discovery | Zero-registration boilerplate — new endpoints are picked up automatically |
