@@ -69,9 +69,18 @@ Endpoints are discovered and registered automatically via reflection:
 Domain events follow a **two-track dispatch** strategy:
 
 1. **Outbox persistence** — events are written to the `OutboxMessages` table inside the same DB transaction as the business operation, guaranteeing at-least-once delivery.
-2. **Immediate in-process dispatch** — after the transaction commits, buffered events are pushed to a .NET `Channel<IDomainEvent>` and picked up instantly by `ImmediateEventDispatcher`, eliminating the polling delay for the happy path.
+2. **Immediate in-process dispatch** — after the transaction commits, buffered events are pushed to a .NET `Channel<DomainEventEnvelope>` (carrying the outbox message ID + domain event) and picked up instantly by `ImmediateEventDispatcher`, eliminating the polling delay for the happy path.
 
-If immediate dispatch fails, `OutboxDispatcher` (a `BackgroundService` using `FOR UPDATE SKIP LOCKED`) picks up the unprocessed outbox message on its next polling cycle as a fallback.
+Both dispatchers coordinate via **claim-based locking** on the outbox row to prevent double processing:
+
+| Step | `ImmediateEventDispatcher` | `OutboxDispatcher` |
+|---|---|---|
+| **Claim** | `UPDATE … WHERE Id = @id AND ClaimedBy IS NULL` (by outbox message ID from the channel) | `FOR UPDATE SKIP LOCKED` batch query over unclaimed/expired rows |
+| **Process** | Resolves and invokes `IDomainEventHandler<T>` handlers | Deserializes payload, resolves and invokes handlers |
+| **Mark done** | Sets `ProcessedAt`, clears claim | Sets `ProcessedAt`, clears claim |
+| **On failure** | Increments `RetryCount`, releases claim → `OutboxDispatcher` retries on next cycle | Increments `RetryCount`, releases claim → retries on next cycle |
+
+If the immediate dispatcher wins the claim, the outbox dispatcher skips the row (already claimed). If the outbox dispatcher claims first, the immediate dispatcher's `TryClaimAsync` returns 0 and skips. If the app crashes after commit but before channel dispatch, the outbox message is already persisted — `OutboxDispatcher` picks it up as a fallback.
 
 ---
 

@@ -9,7 +9,7 @@ public sealed class OutboxImmediateEventPublisher : IDomainEventPublisher
     private readonly ApplicationDbContext dbContext;
     private readonly DomainEventChannel domainEventChannel;
     private readonly ILogger<OutboxImmediateEventPublisher> logger;
-    private readonly List<IDomainEvent> pendingEvents = [];
+    private readonly List<DomainEventEnvelope> pendingEvents = [];
 
     public OutboxImmediateEventPublisher(
         ApplicationDbContext dbContext,
@@ -23,9 +23,11 @@ public sealed class OutboxImmediateEventPublisher : IDomainEventPublisher
 
     public async Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken)
     {
+        Guid messageId = Guid.NewGuid();
+
         OutboxMessage message = new OutboxMessage
         {
-            Id = Guid.NewGuid(),
+            Id = messageId,
             Type = domainEvent.GetType().AssemblyQualifiedName!,
             Payload = JsonSerializer.Serialize(domainEvent, domainEvent.GetType()),
             OccurredAt = domainEvent.OccurredAt,
@@ -33,18 +35,18 @@ public sealed class OutboxImmediateEventPublisher : IDomainEventPublisher
         };
 
         await dbContext.OutboxMessages.AddAsync(message, cancellationToken);
-        pendingEvents.Add(domainEvent);
+        pendingEvents.Add(new DomainEventEnvelope(messageId, domainEvent));
     }
 
     public void DispatchPendingEvents()
     {
-        foreach (IDomainEvent domainEvent in pendingEvents)
+        foreach (DomainEventEnvelope envelope in pendingEvents)
         {
-            if (!domainEventChannel.Writer.TryWrite(domainEvent))
+            if (!domainEventChannel.Writer.TryWrite(envelope))
             {
                 logger.LogWarning(
                     "Failed to write {EventType} to the immediate channel. Outbox will handle it.",
-                    domainEvent.GetType().Name);
+                    envelope.DomainEvent.GetType().Name);
             }
         }
 
