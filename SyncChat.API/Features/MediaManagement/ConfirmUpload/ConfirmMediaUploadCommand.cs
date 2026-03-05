@@ -43,7 +43,7 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
 
         if (media.State != MediaState.Initiated) // Idempotency guard
         {
-            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: media.State));
+            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaState: media.State));
         }
 
         MediaUploadSession? mediaUploadSession = await dbContext.MediaUploadSessions
@@ -121,7 +121,7 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
 
             eventPublisher.DispatchPendingEvents();
 
-            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: MediaState.Uploaded));
+            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaState: MediaState.Uploaded));
         }
         catch
         {

@@ -2,4 +2,4 @@
 
 namespace SyncChat.API.Features.MediaManagement.ConfirmUpload;
 
-public sealed record ConfirmMediaUploadResult(Guid MediaId, MediaState MediaStateState);
+public sealed record ConfirmMediaUploadResult(Guid MediaId, MediaState MediaState);
