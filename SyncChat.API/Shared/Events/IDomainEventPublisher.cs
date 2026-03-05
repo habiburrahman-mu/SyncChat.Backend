@@ -3,4 +3,5 @@
 public interface IDomainEventPublisher
 {
     Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken);
+    void DispatchPendingEvents();
 }

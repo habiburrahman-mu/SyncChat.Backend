@@ -20,7 +20,10 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
     private readonly IBlobStorage blobStorage;
     private readonly IDomainEventPublisher eventPublisher;
 
-    public ConfirmMediaUploadCommandHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage, IDomainEventPublisher eventPublisher)
+    public ConfirmMediaUploadCommandHandler(
+        ApplicationDbContext dbContext,
+        IBlobStorage blobStorage,
+        IDomainEventPublisher eventPublisher)
     {
         this.dbContext = dbContext;
         this.blobStorage = blobStorage;
@@ -110,11 +113,13 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
 
             dbContext.MediaUploadSessions.Update(mediaUploadSession);
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-
             await eventPublisher.PublishAsync(new MediaUploadedEvent(MediaId: command.MediaId), cancellationToken);
 
+            await dbContext.SaveChangesAsync(cancellationToken);
+
             await dbContext.Database.CommitTransactionAsync(cancellationToken);
+
+            eventPublisher.DispatchPendingEvents();
 
             return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: media.State));
         }

@@ -185,9 +185,12 @@ public static class DependencyInjection
 
     private static IServiceCollection AddOutboxServices(this IServiceCollection services)
     {
-        services.AddScoped<IDomainEventPublisher, OutboxEventPublisher>();
+        services.AddSingleton<DomainEventChannel>();
+
+        services.AddScoped<IDomainEventPublisher, OutboxImmediateEventPublisher>();
 
         services.AddHostedService<OutboxDispatcher>();
+        services.AddHostedService<ImmediateEventDispatcher>();
 
         return services;
     }
