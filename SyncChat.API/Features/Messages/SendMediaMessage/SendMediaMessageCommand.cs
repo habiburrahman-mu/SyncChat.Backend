@@ -90,6 +90,13 @@ public sealed class SendMediaMessageCommandHandler : ICommandHandler<SendMediaMe
                 c.SetProperty(p => p.LastMessageId, message.MessageId),
                 cancellationToken);
 
+        await dbContext.Media
+            .Where(m => m.Id == command.MediaId && m.State == MediaState.Active)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.State, MediaState.Attached)
+                .SetProperty(m => m.UpdatedAt, DateTimeOffset.UtcNow),
+                cancellationToken);
+
         await transaction.CommitAsync(cancellationToken);
 
         User sender = await dbContext.Users

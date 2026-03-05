@@ -121,7 +121,7 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
 
             eventPublisher.DispatchPendingEvents();
 
-            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: media.State));
+            return Result.Success(new ConfirmMediaUploadResult(MediaId: media.Id, MediaStateState: MediaState.Uploaded));
         }
         catch
         {

@@ -27,5 +27,7 @@ public sealed class MediaUploadedEventHandler : IDomainEventHandler<MediaUploade
         await dbContext.SaveChangesAsync();
 
         // This block is done for future works like validate blob, generate thumbnails.
+
+        // todo: notify
     }
 }
