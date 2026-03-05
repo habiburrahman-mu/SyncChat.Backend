@@ -75,10 +75,11 @@ Both dispatchers coordinate via **claim-based locking** on the outbox row to pre
 
 | Step | `ImmediateEventDispatcher` | `OutboxDispatcher` |
 |---|---|---|
-| **Claim** | `UPDATE … WHERE Id = @id AND ClaimedBy IS NULL` (by outbox message ID from the channel) | `FOR UPDATE SKIP LOCKED` batch query over unclaimed/expired rows |
+| **Claim** | `UPDATE … WHERE Id = @id AND ClaimedBy IS NULL AND RetryCount < 5` (by outbox message ID from the channel) | `FOR UPDATE SKIP LOCKED` batch query over unclaimed/expired rows with `RetryCount < 5` |
 | **Process** | Resolves and invokes `IDomainEventHandler<T>` handlers | Deserializes payload, resolves and invokes handlers |
 | **Mark done** | Sets `ProcessedAt`, clears claim | Sets `ProcessedAt`, clears claim |
 | **On failure** | Increments `RetryCount`, releases claim → `OutboxDispatcher` retries on next cycle | Increments `RetryCount`, releases claim → retries on next cycle |
+| **Dead letter** | Messages with `RetryCount ≥ 5` are skipped by both dispatchers and remain in the table for investigation | Same — logged as `Critical` when the limit is reached |
 
 If the immediate dispatcher wins the claim, the outbox dispatcher skips the row (already claimed). If the outbox dispatcher claims first, the immediate dispatcher's `TryClaimAsync` returns 0 and skips. If the app crashes after commit but before channel dispatch, the outbox message is already persisted — `OutboxDispatcher` picks it up as a fallback.
 

@@ -7,6 +7,7 @@ namespace SyncChat.API.Infrastructure.Outbox;
 public sealed class ImmediateEventDispatcher : BackgroundService
 {
     private static readonly Guid WorkerId = Guid.NewGuid();
+    private const int MaxRetryCount = 5;
 
     private readonly DomainEventChannel domainEventChannel;
     private readonly IServiceScopeFactory serviceScopeFactory;
@@ -63,7 +64,8 @@ public sealed class ImmediateEventDispatcher : BackgroundService
         int claimed = await dbContext.OutboxMessages
             .Where(m => m.Id == outboxMessageId
                      && m.ProcessedAt == null
-                     && m.ClaimedBy == null)
+                     && m.ClaimedBy == null
+                     && m.RetryCount < MaxRetryCount)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(m => m.ClaimedBy, WorkerId.ToString("N"))
                 .SetProperty(m => m.ClaimedAt, DateTimeOffset.UtcNow),

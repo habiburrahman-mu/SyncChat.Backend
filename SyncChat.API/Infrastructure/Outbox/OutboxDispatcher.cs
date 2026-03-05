@@ -10,6 +10,7 @@ public sealed class OutboxDispatcher : BackgroundService
 {
     private static readonly TimeSpan ClaimTimeout = TimeSpan.FromMinutes(2);
     private static readonly Guid WorkerId = Guid.NewGuid();
+    private const int MaxRetryCount = 5;
 
     private readonly ILogger<OutboxDispatcher> logger;
     private readonly IServiceScopeFactory serviceScopeFactory;
@@ -54,7 +55,6 @@ public sealed class OutboxDispatcher : BackgroundService
         {
             try
             {
-                // TODO: need to think about what to do about retry count
                 await DispatchMessageAsync(message, provider, cancellationToken);
 
                 message.ProcessedAt = DateTimeOffset.UtcNow;
@@ -67,11 +67,22 @@ public sealed class OutboxDispatcher : BackgroundService
                 message.ClaimedBy = null;
                 message.ClaimedAt = null;
 
-                logger.LogError(ex, $"Failed processing outbox message {message.Id} on {WorkerId:N}", message.Id);
-
-                throw;
+                if (message.RetryCount >= MaxRetryCount)
+                {
+                    logger.LogCritical(ex,
+                        "Outbox message {MessageId} exhausted all {MaxRetries} retries and will no longer be processed.",
+                        message.Id, MaxRetryCount);
+                }
+                else
+                {
+                    logger.LogError(ex,
+                        "Failed processing outbox message {MessageId} (retry {RetryCount}/{MaxRetries}). Will retry.",
+                        message.Id, message.RetryCount, MaxRetryCount);
+                }
             }
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<List<OutboxMessage>> ClaimBatchAsync(
@@ -85,11 +96,12 @@ public sealed class OutboxDispatcher : BackgroundService
                 SELECT *
                 FROM ""OutboxMessages""
                 WHERE ""ProcessedAt"" IS NULL
-                  AND (""ClaimedAt"" IS NULL OR ""ClaimedAt"" < {0})
+                  AND ""RetryCount"" < {0}
+                  AND (""ClaimedAt"" IS NULL OR ""ClaimedAt"" < {1})
                 ORDER BY ""OccurredAt""
-                LIMIT {1}
+                LIMIT {2}
                 FOR UPDATE SKIP LOCKED
-            ", now - ClaimTimeout, batchSize)
+            ", MaxRetryCount, now - ClaimTimeout, batchSize)
             .ToListAsync(cancellationToken);
 
         messages.ForEach(m =>
