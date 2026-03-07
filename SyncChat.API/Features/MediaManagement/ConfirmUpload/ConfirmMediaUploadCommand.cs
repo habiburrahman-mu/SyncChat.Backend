@@ -61,12 +61,6 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
             return Result.Failure<ConfirmMediaUploadResult>(MediaErrors.UploadSessionExpired(command.MediaId));
         }
 
-        if (mediaUploadSession.UploadCount <= 0)
-        {
-            return Result.Failure<ConfirmMediaUploadResult>(
-                MediaErrors.NoUploadAttemptDetected(command.MediaId));
-        }
-
         BlobMetadata? metadata = await blobStorage.GetMetadataAsync(media.StorageKey, cancellationToken);
 
         if (metadata is null)
@@ -110,6 +104,7 @@ public sealed class ConfirmMediaUploadCommandHandler : ICommandHandler<ConfirmMe
             }
 
             mediaUploadSession.UsedAt = now;
+            mediaUploadSession.UploadCount++;
 
             dbContext.MediaUploadSessions.Update(mediaUploadSession);
 

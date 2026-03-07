@@ -305,6 +305,20 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 
 Media is uploaded via a **two-phase presigned URL** pattern to avoid routing binary data through the API server.
 
+#### Presigned URL Host Resolution
+MinIO presigned URLs embed the endpoint host directly in their HMAC signature. When the MinIO container is reachable from the backend only via a Docker-internal hostname (e.g., `minio:9000`), but the browser must reach it via a public address (e.g., `http://localhost:9000`), the two hostnames produce different signatures — causing HTTP 403 `SignatureDoesNotMatch` errors if the URL is simply rewritten after generation.
+
+The API registers **two `IMinioClient` instances** (via .NET 9 keyed services):
+
+| Key | Endpoint | Purpose |
+|---|---|---|
+| `minio-internal` | `Endpoint:Port` from config | All real I/O — `StatObject`, `PutObject`, `GetObject`, `DeleteObject`, `ListObjects`, bucket operations |
+| `minio-presign` | Host + port parsed from `PublicUrl` | `PresignedPutObjectAsync` and `PresignedGetObjectAsync` only |
+
+Presigned URL generation is **pure local HMAC computation** — the presign client never makes a network call to MinIO, so it can safely be configured with a host the backend container cannot reach. The generated URL already contains the correct public host and a matching signature.
+
+> `PublicUrl` is optional when running locally outside Docker (where `Endpoint:Port` is already browser-accessible). It is required in Docker Compose deployments where MinIO is only reachable inside the container network.
+
 ```
 Client                     API                        MinIO
   │                         │                           │
@@ -427,7 +441,8 @@ Update `appsettings.json` (or use user secrets / environment variables):
     "AccessKey": "minioadmin",
     "SecretKey": "minioadmin",
     "Bucket": "syncchat",
-    "UseSSL": false
+    "UseSSL": false,
+    "PublicUrl": "http://localhost:9000"
   }
 }
 ```
@@ -490,3 +505,4 @@ dotnet test
 | Result pattern over exceptions | Predictable control flow for expected failures without try/catch overhead |
 | Outbox + Channel for domain events | Outbox guarantees at-least-once delivery; in-process `Channel<T>` provides immediate dispatch after commit, with outbox as fallback |
 | Interface-based endpoint discovery | Zero-registration boilerplate — new endpoints are picked up automatically |
+| Dual `IMinioClient` for presigned URLs | Presigned URL HMAC signatures embed the host; a dedicated presign client keyed to `PublicUrl` ensures the browser receives URLs with the correct public host and a matching signature, avoiding `SignatureDoesNotMatch (403)` when MinIO's Docker hostname differs from its browser-facing address |
