@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel;
 using Minio.DataModel.Args;
@@ -6,17 +7,23 @@ using Minio.Exceptions;
 using SyncChat.API.Shared.Configuration;
 using SyncChat.API.Shared.Storage.Contracts;
 using SyncChat.API.Shared.Storage.Contracts.Models;
+using static SyncChat.API.Shared.Constants.StorageConstants;
 
 namespace SyncChat.API.Infrastructure.Storage;
 
 public sealed class MinioBlobStorage : IBlobStorage
 {
     private readonly IMinioClient minioClient;
+    private readonly IMinioClient presignClient;
     private readonly StorageSettings storageSettings;
 
-    public MinioBlobStorage(IMinioClient minioClient, IOptions<StorageSettings> options)
+    public MinioBlobStorage(
+        [FromKeyedServices(MinioClientKeys.Internal)] IMinioClient minioClient,
+        [FromKeyedServices(MinioClientKeys.Presign)] IMinioClient presignClient,
+        IOptions<StorageSettings> options)
     {
         this.minioClient = minioClient;
+        this.presignClient = presignClient;
         this.storageSettings = options.Value;
     }
 
@@ -103,9 +110,7 @@ public sealed class MinioBlobStorage : IBlobStorage
             .WithObject(objectName)
             .WithExpiry((int)validFor.TotalSeconds);
 
-        string url = await minioClient.PresignedPutObjectAsync(presignedPutObjectArgs);
-
-        return url;
+        return await presignClient.PresignedPutObjectAsync(presignedPutObjectArgs);
     }
 
     public async Task<string> GeneratePresignedDownloadUrlAsync(
@@ -127,9 +132,7 @@ public sealed class MinioBlobStorage : IBlobStorage
             .WithObject(objectName)
             .WithExpiry((int)validFor.TotalSeconds);
 
-        string url = await minioClient.PresignedGetObjectAsync(presignedGetObjectArgs);
-
-        return url;
+        return await presignClient.PresignedGetObjectAsync(presignedGetObjectArgs);
     }
 
     public async Task<BlobMetadata?> GetMetadataAsync(string objectName, CancellationToken cancellationToken)

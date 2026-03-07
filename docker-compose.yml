@@ -15,6 +15,7 @@ services:
             - Storage__SecretKey=minioadmin
             - Storage__Bucket=syncchat
             - Storage__UseSSL=false
+            - Storage__PublicUrl=http://localhost:9000
         volumes:
             - /mnt/c/Users/User/SyncChat/SyncChat.API:/app
         depends_on:
@@ -44,6 +45,7 @@ services:
         environment:
           MINIO_ROOT_USER: minioadmin
           MINIO_ROOT_PASSWORD: minioadmin
+          MINIO_SERVER_URL: http://localhost:9000
         ports:
           - "9000:9000"   # S3 API
           - "9001:9001"   # Admin Console

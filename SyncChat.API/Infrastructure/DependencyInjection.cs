@@ -21,6 +21,7 @@ using SyncChat.API.Shared.Socket.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
 using System.Text;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
+using static SyncChat.API.Shared.Constants.StorageConstants;
 
 namespace SyncChat.API.Infrastructure;
 
@@ -159,14 +160,44 @@ public static class DependencyInjection
 
     private static IServiceCollection AddStorage(this IServiceCollection services)
     {
-        services.AddSingleton<IMinioClient>(serviceProvider =>
+        // Internal client: reaches MinIO via Docker hostname for all real I/O operations.
+        services.AddKeyedSingleton<IMinioClient>(MinioClientKeys.Internal, (serviceProvider, _) =>
         {
-            var storageSettings = serviceProvider.GetRequiredService<IOptions<StorageSettings>>().Value;
+            var s = serviceProvider.GetRequiredService<IOptions<StorageSettings>>().Value;
 
             return new MinioClient()
-                .WithEndpoint(storageSettings.Endpoint, storageSettings.Port)
-                .WithCredentials(storageSettings.AccessKey, storageSettings.SecretKey)
-                .WithSSL(storageSettings.UseSSL)
+                .WithEndpoint(s.Endpoint, s.Port)
+                .WithCredentials(s.AccessKey, s.SecretKey)
+                .WithSSL(s.UseSSL)
+                .Build();
+        });
+
+        // Presign client: configured with the browser-facing public URL so that
+        // generated presigned URLs embed the correct host in their HMAC signature.
+        // Presigned URL generation is pure local computation — no network call is made.
+        services.AddKeyedSingleton<IMinioClient>(MinioClientKeys.Presign, (serviceProvider, _) =>
+        {
+            var s = serviceProvider.GetRequiredService<IOptions<StorageSettings>>().Value;
+
+            if (!string.IsNullOrEmpty(s.PublicUrl))
+            {
+                var publicUri = new Uri(s.PublicUrl);
+                int port = publicUri.IsDefaultPort
+                    ? (publicUri.Scheme == "https" ? 443 : 80)
+                    : publicUri.Port;
+
+                return new MinioClient()
+                    .WithEndpoint(publicUri.Host, port)
+                    .WithCredentials(s.AccessKey, s.SecretKey)
+                    .WithSSL(publicUri.Scheme == "https")
+                    .Build();
+            }
+
+            // Fallback: no public URL configured, use same endpoint as internal client.
+            return new MinioClient()
+                .WithEndpoint(s.Endpoint, s.Port)
+                .WithCredentials(s.AccessKey, s.SecretKey)
+                .WithSSL(s.UseSSL)
                 .Build();
         });
 
