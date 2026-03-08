@@ -4,6 +4,27 @@ A real-time chat backend API built with **.NET 9** and **ASP.NET Core Minimal AP
 
 ---
 
+## Why This Project Exists
+
+Most chat tutorials stop at basic WebSocket messaging.
+
+SyncChat is built to explore the patterns that actually matter in production backends:
+
+- **Vertical Slice Architecture**: features are self-contained and independently navigable
+- **Custom mediator pipeline**: full control over dispatch, validation, and error handling without MediatR
+- **Transactional Outbox**: domain events are durably persisted inside the same DB transaction as the business operation
+- **Immediate dispatch via `Channel<T>`**: events reach handlers in milliseconds after commit, with the outbox as a guaranteed fallback
+- **Reliable real-time delivery**: SignalR notifications driven by domain events, not ad-hoc service calls
+- **Presigned media uploads**: binary data never touches the API server; dual `IMinioClient` keyed services solve the Docker hostname / HMAC signature mismatch
+
+---
+
+## Architecture Overview
+
+![Architecture Overview](docs-assets/request-flow.png)
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
