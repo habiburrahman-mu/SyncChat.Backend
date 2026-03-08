@@ -6,6 +6,8 @@ A production-style real-time chat backend demonstrating Vertical Slice Architect
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 ![SignalR](https://img.shields.io/badge/SignalR-Real--time-00897B)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![xUnit](https://img.shields.io/badge/xUnit-512BD4?logo=xunit&logoColor=white)
+![MinIO](https://img.shields.io/badge/MinIO-2563EB?logo=minio&logoColor=white)
 
 ---
 
