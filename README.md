@@ -182,14 +182,8 @@ SyncChat.Backend/
 | `Read` | Recipient has seen the message (`LastSeenMessageId` updated on `ConversationMember`) |
 
 ### Key Entity Relationships
-```
-User ──< ConversationMember >── Conversation
-                                     │
-                               Message (LastMessageId FK)
-                                     │
-                          ┌──────────┴──────────┐
-                     MessageStatus         MediaReference ── Media
-```
+
+![Key Entity Relationships](docs-assets/key-entity-relations.png)
 
 ---
 
@@ -340,43 +334,12 @@ Presigned URL generation is **pure local HMAC computation** — the presign clie
 
 > `PublicUrl` is optional when running locally outside Docker (where `Endpoint:Port` is already browser-accessible). It is required in Docker Compose deployments where MinIO is only reachable inside the container network.
 
-```
-Client                     API                        MinIO
-  │                         │                           │
-  │── POST /media/initiate ─>│                           │
-  │                         │── create Media row        │
-  │                         │── generate presigned URL ─>│
-  │<── { mediaId, uploadUri, expiration } ──────────────│
-  │                         │                           │
-  │── PUT {uploadUri} (binary) ──────────────────────>  │
-  │<── 200 OK ──────────────────────────────────────────│
-  │                         │                           │
-  │── POST /media/confirm ──>│                           │
-  │                         │── verify blob exists      │
-  │                         │── validate size + MIME    │
-  │                         │── set state = Uploaded    │
-  │                         │── persist MediaUploadedEvent (Outbox)
-  │                         │── commit transaction      │
-  │                         │── dispatch via Channel (immediate)
-  │<── { mediaId, state } ──│                           │
-```
+![Media Upload Pipeline](docs-assets/media-upload-pipeline.png)
 
 ### Accessing Media (`GET /api/media/getAccessUrl`)
 Once media reaches `Active` or `Attached` state, clients request a **short-lived presigned download URL**:
 
-```
-Client                     API                        MinIO
-  │                         │                           │
-  │── GET /media/getAccessUrl?mediaId={id} ──>│         │
-  │                         │── load Media row          │
-  │                         │── check state (Active/Attached)
-  │                         │── verify membership/ownership
-  │                         │── generate presigned URL ─>│
-  │<── { mediaId, url, expiresAt } ──────────────────────│
-  │                         │                           │
-  │── GET {url} ────────────────────────────────────────>│
-  │<── binary blob ──────────────────────────────────────│
-```
+![Accessing Media Pipeline](docs-assets/accessing-media-pipeline.png)
 
 **Access check** — two-branch logic:
 - `OwnerType == Conversation` → verifies current user is an active member of the owning conversation
