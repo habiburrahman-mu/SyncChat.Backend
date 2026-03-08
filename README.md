@@ -1,6 +1,6 @@
 # SyncChat.Backend
 
-A real-time chat backend API built with **.NET 9** and **ASP.NET Core Minimal API**, featuring a custom mediator pipeline, vertical slice architecture, SignalR-powered live messaging, and a transactional outbox for reliable event delivery.
+A production-style real-time chat backend demonstrating Vertical Slice Architecture, a custom mediator pipeline, transactional outbox, and SignalR-based event-driven messaging using .NET 9 Minimal API.
 
 ---
 
@@ -24,6 +24,18 @@ SyncChat is built to explore the patterns that actually matter in production bac
 ![Architecture Overview](docs-assets/request-flow.png)
 
 ---
+
+## Core Architecture Concepts
+
+SyncChat explores several production-grade backend patterns:
+
+- Vertical Slice Architecture
+- Custom mediator pipeline (no MediatR)
+- Result pattern for predictable error handling
+- Transactional Outbox for reliable domain event delivery
+- Immediate event dispatch using Channel<T>
+- SignalR notifications driven by domain events
+- Two-phase presigned media upload with MinIO
 
 ## Tech Stack
 
