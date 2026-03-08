@@ -2,6 +2,11 @@
 
 A production-style real-time chat backend demonstrating Vertical Slice Architecture, a custom mediator pipeline, transactional outbox, and SignalR-based event-driven messaging using .NET 9 Minimal API.
 
+![.NET](https://img.shields.io/badge/.NET-9-512BD4?logo=dotnet&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![SignalR](https://img.shields.io/badge/SignalR-Real--time-00897B)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+
 ---
 
 ## Why This Project Exists
@@ -25,18 +30,6 @@ SyncChat is built to explore the patterns that actually matter in production bac
 
 ---
 
-## Core Architecture Concepts
-
-SyncChat explores several production-grade backend patterns:
-
-- Vertical Slice Architecture
-- Custom mediator pipeline (no MediatR)
-- Result pattern for predictable error handling
-- Transactional Outbox for reliable domain event delivery
-- Immediate event dispatch using Channel<T>
-- SignalR notifications driven by domain events
-- Two-phase presigned media upload with MinIO
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -53,7 +46,7 @@ SyncChat explores several production-grade backend patterns:
 
 ---
 
-## Architecture
+## Core Architecture Concepts
 
 ### Vertical Slice / Feature-based
 Each feature lives in its own self-contained folder under `Features/`. A typical feature slice contains:
@@ -97,24 +90,6 @@ Endpoints are discovered and registered automatically via reflection:
 
 1. A marker interface per domain group (e.g., `IMessageEndpoint : IEndpoint`) is decorated with `[RouteGroupPrefix("message", "Message", HasAuthorization = true)]`
 2. `EndpointRegistrar.RegisterEndpoints()` scans the assembly, creates route groups, and maps all endpoint implementations
-
-### Transactional Outbox + Immediate Channel Dispatch
-Domain events follow a **two-track dispatch** strategy:
-
-1. **Outbox persistence** — events are written to the `OutboxMessages` table inside the same DB transaction as the business operation, guaranteeing at-least-once delivery.
-2. **Immediate in-process dispatch** — after the transaction commits, buffered events are pushed to a .NET `Channel<DomainEventEnvelope>` (carrying the outbox message ID + domain event) and picked up instantly by `ImmediateEventDispatcher`, eliminating the polling delay for the happy path.
-
-Both dispatchers coordinate via **claim-based locking** on the outbox row to prevent double processing:
-
-| Step | `ImmediateEventDispatcher` | `OutboxDispatcher` |
-|---|---|---|
-| **Claim** | `UPDATE … WHERE Id = @id AND ClaimedBy IS NULL AND RetryCount < 5` (by outbox message ID from the channel) | `FOR UPDATE SKIP LOCKED` batch query over unclaimed/expired rows with `RetryCount < 5` |
-| **Process** | Resolves and invokes `IDomainEventHandler<T>` handlers | Deserializes payload, resolves and invokes handlers |
-| **Mark done** | Sets `ProcessedAt`, clears claim | Sets `ProcessedAt`, clears claim |
-| **On failure** | Increments `RetryCount`, releases claim → `OutboxDispatcher` retries on next cycle | Increments `RetryCount`, releases claim → retries on next cycle |
-| **Dead letter** | Messages with `RetryCount ≥ 5` are skipped by both dispatchers and remain in the table for investigation | Same — logged as `Critical` when the limit is reached |
-
-If the immediate dispatcher wins the claim, the outbox dispatcher skips the row (already claimed). If the outbox dispatcher claims first, the immediate dispatcher's `TryClaimAsync` returns 0 and skips. If the app crashes after commit but before channel dispatch, the outbox message is already persisted — `OutboxDispatcher` picks it up as a fallback.
 
 ---
 
@@ -160,6 +135,28 @@ SyncChat.Backend/
 │   └── Program.cs
 └── SyncChat.Test/
 ```
+
+---
+
+## Messaging & Event Flow
+
+### Transactional Outbox + Immediate Channel Dispatch
+Domain events follow a **two-track dispatch** strategy:
+
+1. **Outbox persistence** — events are written to the `OutboxMessages` table inside the same DB transaction as the business operation, guaranteeing at-least-once delivery.
+2. **Immediate in-process dispatch** — after the transaction commits, buffered events are pushed to a .NET `Channel<DomainEventEnvelope>` (carrying the outbox message ID + domain event) and picked up instantly by `ImmediateEventDispatcher`, eliminating the polling delay for the happy path.
+
+Both dispatchers coordinate via **claim-based locking** on the outbox row to prevent double processing:
+
+| Step | `ImmediateEventDispatcher` | `OutboxDispatcher` |
+|---|---|---|
+| **Claim** | `UPDATE … WHERE Id = @id AND ClaimedBy IS NULL AND RetryCount < 5` (by outbox message ID from the channel) | `FOR UPDATE SKIP LOCKED` batch query over unclaimed/expired rows with `RetryCount < 5` |
+| **Process** | Resolves and invokes `IDomainEventHandler<T>` handlers | Deserializes payload, resolves and invokes handlers |
+| **Mark done** | Sets `ProcessedAt`, clears claim | Sets `ProcessedAt`, clears claim |
+| **On failure** | Increments `RetryCount`, releases claim → `OutboxDispatcher` retries on next cycle | Increments `RetryCount`, releases claim → retries on next cycle |
+| **Dead letter** | Messages with `RetryCount ≥ 5` are skipped by both dispatchers and remain in the table for investigation | Same — logged as `Critical` when the limit is reached |
+
+If the immediate dispatcher wins the claim, the outbox dispatcher skips the row (already claimed). If the outbox dispatcher claims first, the immediate dispatcher's `TryClaimAsync` returns 0 and skips. If the app crashes after commit but before channel dispatch, the outbox message is already persisted — `OutboxDispatcher` picks it up as a fallback.
 
 ---
 
@@ -328,7 +325,7 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 
 ---
 
-## Media Upload Flow
+## Media Upload Architecture
 
 Media is uploaded via a **two-phase presigned URL** pattern to avoid routing binary data through the API server.
 
