@@ -1,12 +1,11 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using SyncChat.API.Features.Conversations.DTOs;
 using SyncChat.API.Features.Messages.DTOs;
-using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -18,7 +17,7 @@ public sealed record AddConversationMemberCommand(
     long ConversationId,
     List<long> MemberIds) : ICommand;
 
-public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService, IHubContext<NotificationHub, INotificationClient> hub)
+public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService, IMessageNotificationService notificationService)
     : ICommandHandler<AddConversationMemberCommand>
 {
     public async Task<Result> HandleAsync(AddConversationMemberCommand command, CancellationToken cancellationToken = default)
@@ -73,11 +72,12 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        await SendNotificationAsync(
-            command.ConversationId,
-            existingMembers.Select(x => x.UserId).ToList(),
-            command.MemberIds,
-            systemMessages,
+        await notificationService.NotifyMembersAddedAsync(
+            new MembersAddedNotificationModel(
+                command.ConversationId,
+                command.MemberIds,
+                existingMembers.Select(x => x.UserId).ToList(),
+                systemMessages.Select(m => m.ToDTO()).ToList()),
             cancellationToken);
 
         return Result.Success();
@@ -107,24 +107,6 @@ public sealed class AddConversationMemberCommandHandler(ApplicationDbContext dbC
         await dbContext.Messages.AddRangeAsync(systemMessages, cancellationToken);
 
         return systemMessages;
-    }
-
-    private async Task SendNotificationAsync(long conversationId, List<long> existingMembers, List<long> newMembers, List<Message> systemMessages, CancellationToken cancellationToken)
-    {
-        var conversation = await dbContext.Conversations
-            .AsNoTracking()
-            .FirstAsync(c => c.ConversationId == conversationId, cancellationToken);
-
-        ConversationDTO conversationDTO = conversation.ToDTO()!;
-
-        var allNotificationTasks = newMembers
-            .Select(userId => hub.Clients.User(userId.ToString()).AddedToConversation(conversationDTO))
-            .Concat(existingMembers.Select(userId => hub.Clients.User(userId.ToString()).HasNewMessage(conversationId)))
-            .Concat(systemMessages.Select(message =>
-                hub.Clients.Groups(message.ConversationId.ToString()).MessageReceived(message.ToDTO())))
-            .Concat(existingMembers.Select(userId => hub.Clients.User(userId.ToString()).NewMemberAdded(conversationId)));
-
-        await Task.WhenAll(allNotificationTasks);
     }
 }
 

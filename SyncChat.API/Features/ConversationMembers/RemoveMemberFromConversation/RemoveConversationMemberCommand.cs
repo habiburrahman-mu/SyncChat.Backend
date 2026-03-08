@@ -1,11 +1,11 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Features.Messages.DTOs;
-using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -21,19 +21,16 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IIdentityService _identityService;
-    private readonly IHubContext<NotificationHub, INotificationClient> _hub;
-    private readonly ILogger<RemoveConversationMemberCommandHandler> _logger;
+    private readonly IMessageNotificationService _notificationService;
 
     public RemoveConversationMemberCommandHandler(
         ApplicationDbContext dbContext,
         IIdentityService identityService,
-        IHubContext<NotificationHub, INotificationClient> hub,
-        ILogger<RemoveConversationMemberCommandHandler> logger)
+        IMessageNotificationService notificationService)
     {
         _dbContext = dbContext;
         _identityService = identityService;
-        _hub = hub;
-        _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task<Result> HandleAsync(RemoveConversationMemberCommand command, CancellationToken cancellationToken = default)
@@ -66,7 +63,12 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await SendNotificationAsync(conversationMember, systemMessage, cancellationToken);
+        await _notificationService.NotifyMemberRemovedAsync(
+            new MemberRemovedNotificationModel(
+                conversationMember.ConversationId,
+                conversationMember.UserId,
+                systemMessage.ToDTO()),
+            cancellationToken);
 
         return Result.Success();
     }
@@ -94,37 +96,6 @@ public sealed class RemoveConversationMemberCommandHandler : ICommandHandler<Rem
         _dbContext.Conversations.Update(conversation);
 
         return message;
-    }
-
-    private async Task SendNotificationAsync(ConversationMember removedMember, Message systemMessage, CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Fetch all active members in the conversation
-            List<long> existingMembers = await _dbContext.ConversationMembers
-                .Where(x => x.ConversationId == systemMessage.ConversationId
-                            && x.IsActive
-                            && x.LeftAt == null)
-                .Select(x => x.UserId)
-                .ToListAsync(cancellationToken);
-
-            // Include the removed member for certain notifications
-            List<long> removedMembers = new() { removedMember.UserId };
-
-            // Prepare all notifications
-            var allNotificationTasks = removedMembers.Select(userId => _hub.Clients.User(userId.ToString()).RemovedFromConversation(removedMember.ConversationId))
-                .Concat(existingMembers.Select(userId => _hub.Clients.User(userId.ToString()).HasNewMessage(systemMessage.ConversationId)))
-                .Concat([_hub.Clients.Groups(systemMessage.ConversationId.ToString()).MessageReceived(systemMessage.ToDTO())])
-                .Concat(existingMembers.Select(userId => _hub.Clients.User(userId.ToString()).MemberRemoved(systemMessage!.ConversationId)));
-
-            // Execute all notifications concurrently
-            await Task.WhenAll(allNotificationTasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send system message notification to conversation {ConversationId}", systemMessage.ConversationId);
-        }
-
     }
 
     private bool HasMemberRemovePermission(MemberRole memberRole) => memberRole == MemberRole.Owner || memberRole == MemberRole.Admin;

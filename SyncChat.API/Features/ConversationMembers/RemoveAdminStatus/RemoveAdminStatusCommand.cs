@@ -1,11 +1,11 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Features.Messages.DTOs;
-using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -19,19 +19,16 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IIdentityService _identity;
-    private readonly IHubContext<NotificationHub, INotificationClient> _hub;
-    private readonly ILogger<RemoveAdminStatusCommandHandler> _logger;
+    private readonly IMessageNotificationService _notificationService;
 
     public RemoveAdminStatusCommandHandler(
         ApplicationDbContext dbContext,
         IIdentityService identity,
-        IHubContext<NotificationHub, INotificationClient> hub,
-        ILogger<RemoveAdminStatusCommandHandler> logger)
+        IMessageNotificationService notificationService)
     {
         _dbContext = dbContext;
         _identity = identity;
-        _hub = hub;
-        _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task<Result> HandleAsync(RemoveAdminStatusCommand command, CancellationToken cancellationToken)
@@ -63,7 +60,12 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await SendNotificationsAsync(member, systemMessage, cancellationToken);
+        await _notificationService.NotifyMemberDemotedAsync(
+            new MemberDemotedNotificationModel(
+                member.ConversationId,
+                member.UserId,
+                systemMessage.ToDTO()),
+            cancellationToken);
 
         return Result.Success();
     }
@@ -91,58 +93,6 @@ public sealed class RemoveAdminStatusCommandHandler : ICommandHandler<RemoveAdmi
         _dbContext.Conversations.Update(conv);
 
         return msg;
-    }
-
-    private async Task SendNotificationsAsync(
-        ConversationMember demotedMember,
-        Message systemMessage,
-        CancellationToken ct)
-    {
-        try
-        {
-            var activeUsers = await _dbContext.ConversationMembers
-                .Where(m => m.ConversationId == demotedMember.ConversationId &&
-                            m.IsActive &&
-                            m.LeftAt == null)
-                .Select(m => m.UserId)
-                .ToListAsync(ct);
-
-            var tasks = new List<Task>();
-
-            // Notify demoted user
-            tasks.Add(
-                _hub.Clients.User(demotedMember.UserId.ToString())
-                    .MemberRoleChanged(demotedMember.ConversationId)
-            );
-
-            // New system message to group
-            tasks.Add(
-                _hub.Clients.Groups(systemMessage.ConversationId.ToString())
-                    .MessageReceived(systemMessage.ToDTO())
-            );
-
-            // Notify everyone of new message
-            tasks.AddRange(
-                activeUsers.Select(uid =>
-                    _hub.Clients.User(uid.ToString())
-                       .HasNewMessage(systemMessage.ConversationId))
-            );
-
-            // Notify everyone that a member was demoted
-            tasks.AddRange(
-                activeUsers.Select(uid =>
-                    _hub.Clients.User(uid.ToString())
-                       .MemberDemoted(demotedMember.ConversationId))
-            );
-
-            await Task.WhenAll(tasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Failed sending demotion notifications in conversation {ConvId}",
-                demotedMember.ConversationId);
-        }
     }
 
     public sealed class RemoveAdminStatusCommandValidator : AbstractValidator<RemoveAdminStatusCommand>

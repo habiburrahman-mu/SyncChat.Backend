@@ -1,12 +1,11 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using SyncChat.API.Features.ConversationMembers.RemoveMemberFromConversation;
 using SyncChat.API.Features.Messages.DTOs;
-using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -21,19 +20,16 @@ public sealed class MakeMemberAdminCommandHandler : ICommandHandler<MakeMemberAd
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly IIdentityService _identityService;
-    private readonly IHubContext<NotificationHub, INotificationClient> _hub;
-    private readonly ILogger<RemoveConversationMemberCommandHandler> _logger;
+    private readonly IMessageNotificationService _notificationService;
 
     public MakeMemberAdminCommandHandler(
         ApplicationDbContext dbContext,
         IIdentityService identityService,
-        IHubContext<NotificationHub, INotificationClient> hub,
-        ILogger<RemoveConversationMemberCommandHandler> logger)
+        IMessageNotificationService notificationService)
     {
         this._dbContext = dbContext;
         this._identityService = identityService;
-        this._hub = hub;
-        this._logger = logger;
+        this._notificationService = notificationService;
     }
 
     public async Task<Result> HandleAsync(MakeMemberAdminCommand command, CancellationToken cancellationToken = default)
@@ -66,7 +62,12 @@ public sealed class MakeMemberAdminCommandHandler : ICommandHandler<MakeMemberAd
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        await SendNotificationAsync(conversationMember, systemMessage, cancellationToken);
+        await _notificationService.NotifyMemberPromotedAsync(
+            new MemberPromotedNotificationModel(
+                conversationMember.ConversationId,
+                conversationMember.UserId,
+                systemMessage.ToDTO()),
+            cancellationToken);
 
         return Result.Success();
     }
@@ -94,48 +95,6 @@ public sealed class MakeMemberAdminCommandHandler : ICommandHandler<MakeMemberAd
 
         return message;
     }
-
-    private async Task SendNotificationAsync(ConversationMember promotedMember, Message systemMessage, CancellationToken cancellationToken)
-    {
-        try
-        {
-            // Get all active members
-            List<long> memberIds = await _dbContext.ConversationMembers
-                .Where(x => x.ConversationId == systemMessage.ConversationId
-                        && x.IsActive
-                        && x.LeftAt == null)
-                .Select(x => x.UserId)
-                .ToListAsync(cancellationToken);
-
-            // Create all notification tasks in a single concatenated collection
-            var allNotificationTasks = new[]
-            {
-                // Notify the promoted member that they were made admin
-                _hub.Clients.User(promotedMember.UserId.ToString()).PromotedToAdmin(promotedMember.ConversationId)
-            }
-            .Concat(new[]
-            {
-                // Send the system message to the conversation group
-                _hub.Clients.Groups(systemMessage.ConversationId.ToString()).MessageReceived(systemMessage.ToDTO())
-            })
-            .Concat(
-                // Notify all members about the conversation update
-                memberIds.Select(userId =>
-                    _hub.Clients.User(userId.ToString()).MemberRoleChanged(systemMessage.ConversationId))
-            )
-            .Concat(memberIds.Select(userId =>
-                // Notify all members about the new message
-                _hub.Clients.User(userId.ToString()).HasNewMessage(systemMessage.ConversationId)));
-
-            // Await all notifications concurrently
-            await Task.WhenAll(allNotificationTasks);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send system message notification to conversation {ConversationId}", systemMessage.ConversationId);
-        }
-    }
-
 
     private bool HasAdminPromotePermission(MemberRole memberRole) =>
         memberRole == MemberRole.Owner || memberRole == MemberRole.Admin;

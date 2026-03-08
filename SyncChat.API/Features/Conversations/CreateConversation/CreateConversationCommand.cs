@@ -1,10 +1,10 @@
 ﻿using FluentValidation;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SyncChat.API.Features.Conversations.DTOs;
-using SyncChat.API.Features.Notifications;
 using SyncChat.API.Infrastructure.Persistence;
 using SyncChat.API.Shared.Entities;
+using SyncChat.API.Shared.Notification.Contracts;
+using SyncChat.API.Shared.Notification.Contracts.Models;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
@@ -21,13 +21,13 @@ public sealed record CreateConversationCommand(
 public sealed class CreateConversationCommandHandler : ICommandHandler<CreateConversationCommand, long>
 {
     private readonly ApplicationDbContext _dbContext;
-    private readonly IHubContext<NotificationHub, INotificationClient> _hub;
+    private readonly IMessageNotificationService _notificationService;
     private readonly IIdentityService _identityService;
 
-    public CreateConversationCommandHandler(ApplicationDbContext dbContext, IHubContext<NotificationHub, INotificationClient> hub, IIdentityService identityService)
+    public CreateConversationCommandHandler(ApplicationDbContext dbContext, IMessageNotificationService notificationService, IIdentityService identityService)
     {
         _dbContext = dbContext;
-        _hub = hub;
+        _notificationService = notificationService;
         _identityService = identityService;
     }
 
@@ -143,10 +143,9 @@ public sealed class CreateConversationCommandHandler : ICommandHandler<CreateCon
                 .FirstAsync(cancellationToken);
         }
 
-        var notificationTasks = memberList
-            .Select(userId => this._hub.Clients.User(userId.ToString()).NewConversationCreated(conversationDTO));
-
-        await Task.WhenAll(notificationTasks);
+        await _notificationService.NotifyConversationCreatedAsync(
+            new ConversationCreatedNotificationModel(memberList, conversationDTO),
+            cancellationToken);
     }
 }
 
