@@ -8,6 +8,7 @@ A production-style real-time chat backend demonstrating Vertical Slice Architect
 ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
 ![xUnit](https://img.shields.io/badge/xUnit-512BD4?logo=xunit&logoColor=white)
 ![MinIO](https://img.shields.io/badge/MinIO-2563EB?logo=minio&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-95%20passing-brightgreen)
 
 ---
 
@@ -476,17 +477,58 @@ Environment variables in `docker-compose.yml` wire the API directly to the Postg
 
 ## Testing
 
-The `SyncChat.Test` project uses **xUnit** with **FluentAssertions** and is currently focused on infrastructure-level unit tests:
+The `SyncChat.Test` project uses **xUnit** with **FluentAssertions** and **Moq** for comprehensive unit testing.
 
-| Test Class | Coverage |
-|---|---|
-| `PasswordHasherTests` | Hash produces valid output, rejects empty input, `Verify` returns correct results |
-| `TokenProviderTests` | Access token is non-empty, contains expected `sub`/`email` claims, correct issuer/audience |
+### Test Coverage
 
-Tests use an `IClassFixture<TokenProviderTestFixture>` to share a configured `TokenProvider` and a pre-built test `User` across test methods.
+**Total Tests: 95** ✅ (All Passing)
+
+#### Security & Authentication Layer (Complete)
+
+| Component | Test File | Tests | Coverage |
+|-----------|-----------|-------|----------|
+| **PasswordHasher** | `PasswordHasherTests.cs` | 6 | Hash generation, verification, empty input handling |
+| **TokenProvider** | `TokenProviderTests.cs` | 9 | JWT generation, claims validation, refresh tokens, token hashing |
+| **CookieOptionsProvider** | `CookieOptionsProviderTests.cs` | 10 | Environment-specific settings, HttpOnly/Secure/SameSite flags, expiration |
+| **RefreshTokenCookieManager** | `RefreshTokenCookieManagerTests.cs` | 14 | Cookie append/get/delete, lifecycle, various token formats |
+| **RefreshTokenRules** | `RefreshTokenRulesTests.cs` | 20 | Token creation/rotation, revocation, edge cases |
+| **IdentityService** | `IdentityServiceTests.cs` | 16 | User ID extraction, claim parsing, invalid format handling |
+
+#### Test Patterns
+- ✅ **AAA Pattern** (Arrange-Act-Assert)
+- ✅ **Theory Tests** for parameterized scenarios
+- ✅ **Mock Objects** (Moq) for dependency isolation
+- ✅ **FluentAssertions** for readable assertions
+- ✅ **Test Fixtures** for shared setup
+
+#### Running Tests
 
 ```bash
+# Run all tests
 dotnet test
+
+# Run with detailed output
+dotnet test --verbosity normal
+
+# Run specific test class
+dotnet test --filter "FullyQualifiedName~RefreshTokenRulesTests"
+```
+
+#### Test Organization
+
+Tests are organized by layer and component:
+```
+SyncChat.Test/
+└── Infrastructure/
+    └── Security/
+        ├── PasswordHasherTests.cs
+        ├── TokenProviderTests.cs
+        ├── CookieOptionsProviderTests.cs
+        ├── RefreshTokenCookieManagerTests.cs
+        ├── RefreshTokenRulesTests.cs
+        ├── IdentityServiceTests.cs
+        └── Fixtures/
+            └── TokenProviderTestFixture.cs
 ```
 
 ---
@@ -500,4 +542,4 @@ dotnet test
 | Result pattern over exceptions | Predictable control flow for expected failures without try/catch overhead |
 | Outbox + Channel for domain events | Outbox guarantees at-least-once delivery; in-process `Channel<T>` provides immediate dispatch after commit, with outbox as fallback |
 | Interface-based endpoint discovery | Zero-registration boilerplate — new endpoints are picked up automatically |
-| Dual `IMinioClient` for presigned URLs | Presigned URL HMAC signatures embed the host; a dedicated presign client keyed to `PublicUrl` ensures the browser receives URLs with the correct public host and a matching signature, avoiding `SignatureDoesNotMatch (403)` when MinIO's Docker hostname differs from its browser-facing address |
+| Dual `IMinioClient` for presigned URLs | Presigned URL HMAC signatures embed the host; a dedicated presign client keyed to `PublicUrl` ensures the browser receives URLs with the correct public host and a matching signature, avoiding `SignatureDoe
