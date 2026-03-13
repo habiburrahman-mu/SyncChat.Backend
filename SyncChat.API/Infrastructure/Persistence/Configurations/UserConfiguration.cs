@@ -63,6 +63,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsBanned)
                .IsRequired();
 
+        builder.Property(u => u.AvatarKey)
+               .HasMaxLength(500)
+               .IsRequired(false);
+
         // Optional: Add indexes if needed
         //builder.HasIndex(u => u.Email)
         //       .IsUnique();

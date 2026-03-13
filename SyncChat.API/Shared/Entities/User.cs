@@ -26,6 +26,7 @@ public class User
     public DateTimeOffset UpdatedAt { get; set; }
     public bool IsVerified { get; set; }
     public bool IsBanned { get; set; }
+    public string? AvatarKey { get; set; }
 
     // Navigation collections
     public ICollection<Conversation> CreatedConversations { get; set; } = new List<Conversation>();
