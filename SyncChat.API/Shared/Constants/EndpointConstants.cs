@@ -61,5 +61,6 @@ public class EndpointConstants
         public const string InitiateUpload = "/initiateUpload";
         public const string ConfirmUpload = "/confirmUpload";
         public const string GetAccessUrl = "/getAccessUrl";
+        public const string GetState = "/getState";
     }
 }
