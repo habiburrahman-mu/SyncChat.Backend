@@ -9,6 +9,22 @@ services:
             - "5001:5001"
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
+            - AllowedHosts=*
+            # Connection
+            - ConnectionStrings__Default=Host=postgres;Database=syncchatdb;Username=syncchatuser;Password=syncchatpass
+            # Logging
+            - Logging__LogLevel__Default=Information
+            - Logging__LogLevel__Microsoft.AspNetCore=Warning
+            # JWT
+            - JWT__AccessTokenSecret=b9w84#9dk@dkfj0293JSDK@39dkf#kd02kd9Wke
+            - JWT__RefreshTokenSecret=f9w84@9dk#dkfja393BYjk@ABcdf#kd02kd9qSA
+            - JWT__Issuer=SyncChat
+            - JWT__Audience=SyncChatClient
+            - JWT__AccessTokenExpirationInMinutes=10
+            - JWT__RefreshTokenExpirationInMinutes=10080
+            # Google Auth
+            - GoogleAuth__ClientId=YOUR_GOOGLE_CLIENT
+            # Storage
             - Storage__Endpoint=minio
             - Storage__Port=9000
             - Storage__AccessKey=minioadmin
