@@ -168,4 +168,11 @@ public sealed class MinioBlobStorage : IBlobStorage
                 yield return item.Key;
         }
     }
+
+    public string GetPublicObjectUrl(string objectName)
+    {
+        var baseUrl = storageSettings.PublicUrl?.TrimEnd('/')
+            ?? $"{(storageSettings.UseSSL ? "https" : "http")}://{storageSettings.Endpoint}:{storageSettings.Port}";
+        return $"{baseUrl}/{storageSettings.Bucket}/{objectName}";
+    }
 }

@@ -202,6 +202,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorage, MinioBlobStorage>();
+        services.AddHostedService<StorageInitializationService>();
 
         return services;
     }

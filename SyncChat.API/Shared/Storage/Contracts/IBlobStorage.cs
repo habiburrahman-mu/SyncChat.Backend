@@ -38,4 +38,6 @@ public interface IBlobStorage
     IAsyncEnumerable<string> ListObjectKeysAsync(
         string prefix,
         CancellationToken cancellationToken);
+
+    string GetPublicObjectUrl(string objectName);
 }
