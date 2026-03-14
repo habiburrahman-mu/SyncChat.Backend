@@ -4,12 +4,16 @@ using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Storage.Contracts;
 
 namespace SyncChat.API.Features.Users.GetUserDetail;
 
 public sealed record GetUserDetailQuery() : IQuery<GetUserDetailResponse>;
 
-public sealed class GetUserDetailQueryHandler(IIdentityService identityService, ApplicationDbContext dbContext)
+public sealed class GetUserDetailQueryHandler(
+    IIdentityService identityService,
+    ApplicationDbContext dbContext,
+    IBlobStorage blobStorage)
     : IQueryHandler<GetUserDetailQuery, GetUserDetailResponse>
 {
     public async Task<Result<GetUserDetailResponse>> HandleAsync(GetUserDetailQuery query, CancellationToken cancellationToken = default)
@@ -18,7 +22,8 @@ public sealed class GetUserDetailQueryHandler(IIdentityService identityService, 
 
         var user = await dbContext.Users
             .Where(u => u.UserID == userId)
-            .Select(u => new GetUserDetailResponse (
+            .Select(u => new
+            {
                 u.UserID,
                 u.UUID,
                 u.UserName,
@@ -30,13 +35,27 @@ public sealed class GetUserDetailQueryHandler(IIdentityService identityService, 
                 u.LastActive,
                 u.CreatedAt,
                 u.IsVerified,
-                u.IsBanned
-            ))
-            .FirstOrDefaultAsync();
+                u.IsBanned,
+                u.AvatarKey
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user is null)
             return Result.Failure<GetUserDetailResponse>(UserErrors.NotFound(userId));
 
-        return user;
+        return new GetUserDetailResponse(
+            user.UserID,
+            user.UUID,
+            user.UserName,
+            user.Name,
+            user.Email,
+            user.Phone,
+            user.Profile,
+            user.Status,
+            user.LastActive,
+            user.CreatedAt,
+            user.IsVerified,
+            user.IsBanned,
+            AvatarUrl: user.AvatarKey != null ? blobStorage.GetPublicObjectUrl(user.AvatarKey) : null);
     }
 }

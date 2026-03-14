@@ -4,13 +4,14 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Storage.Contracts;
 
 namespace SyncChat.API.Features.Users.GetUserMetaData;
 
 public sealed record GetUserMetaDataQuery(
     long userId) : IQuery<GetUserMetaDataResponse>;
 
-public sealed class GetUserMetaDataQueryHandler (ApplicationDbContext dbContext)
+public sealed class GetUserMetaDataQueryHandler(ApplicationDbContext dbContext, IBlobStorage blobStorage)
     : IQueryHandler<GetUserMetaDataQuery, GetUserMetaDataResponse>
 {
     public async Task<Result<GetUserMetaDataResponse>> HandleAsync(GetUserMetaDataQuery query, CancellationToken cancellationToken)
@@ -20,18 +21,18 @@ public sealed class GetUserMetaDataQueryHandler (ApplicationDbContext dbContext)
             {
                 u.UserID,
                 u.UserName,
-                u.Name
+                u.Name,
+                u.AvatarKey
             })
             .FirstOrDefaultAsync(u => u.UserID == query.userId, cancellationToken);
 
         if (user is null)
             return Result.Failure<GetUserMetaDataResponse>(UserErrors.NotFound(query.userId));
 
-        var response = new GetUserMetaDataResponse(
+        return Result.Success(new GetUserMetaDataResponse(
             user.UserID,
             user.UserName,
-            user.Name);
-
-        return Result.Success(response);
+            user.Name,
+            AvatarUrl: user.AvatarKey != null ? blobStorage.GetPublicObjectUrl(user.AvatarKey) : null));
     }
 }

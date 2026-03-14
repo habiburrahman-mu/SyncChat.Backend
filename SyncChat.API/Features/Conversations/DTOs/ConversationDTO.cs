@@ -9,6 +9,7 @@ public class ConversationDTO
     public ConversationType Type { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
+    public string? OtherUserAvatarKey { get; set; }
     public long? CreatedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

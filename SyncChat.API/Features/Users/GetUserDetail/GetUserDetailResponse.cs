@@ -15,4 +15,5 @@ public sealed record GetUserDetailResponse(
     DateTimeOffset? LastActive,
     DateTimeOffset CreatedAt,
     bool IsVerified,
-    bool IsBanned);
+    bool IsBanned,
+    string? AvatarUrl);

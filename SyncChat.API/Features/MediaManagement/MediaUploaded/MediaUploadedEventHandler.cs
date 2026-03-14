@@ -24,10 +24,17 @@ public sealed class MediaUploadedEventHandler : IDomainEventHandler<MediaUploade
         if (media is null || media.State != MediaState.Uploaded) return;
 
         media.State = MediaState.Active;
-        await dbContext.SaveChangesAsync();
+
+        if (media.OwnerType == MediaOwnerType.User
+            && Guid.TryParse(media.OwnerId, out Guid userUUID))
+        {
+            User? user = await dbContext.Users.FirstOrDefaultAsync(u => u.UUID == userUUID, cancellationToken);
+            if (user is not null)
+                user.AvatarKey = media.StorageKey;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         // This block is done for future works like validate blob, generate thumbnails.
-
-        // todo: notify
     }
 }

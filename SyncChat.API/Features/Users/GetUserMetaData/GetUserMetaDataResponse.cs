@@ -3,4 +3,5 @@
 public sealed record GetUserMetaDataResponse(
     long UserId,
     string UserName,
-    string Name);
+    string Name,
+    string? AvatarUrl);

@@ -20,11 +20,12 @@ public class MessageDTO
     public DateTimeOffset? EditedAt { get; set; }
     public string SenderUserName { get; set; } = null!;
     public string SenderName { get; set; } = null!;
+    public string? SenderAvatarUrl { get; set; }
 }
 
 public static class MessageExtensions
 {
-    public static MessageDTO ToDTO(this Message message)
+    public static MessageDTO ToDTO(this Message message, Func<string, string>? publicUrlResolver = null)
     {
         return new MessageDTO
         {
@@ -43,7 +44,8 @@ public static class MessageExtensions
             IsEdited = message.IsEdited,
             EditedAt = message.EditedAt,
             SenderName = message.Sender?.Name ?? string.Empty,
-            SenderUserName = message.Sender?.UserName ?? string.Empty
+            SenderUserName = message.Sender?.UserName ?? string.Empty,
+            SenderAvatarUrl = message.Sender?.AvatarKey is string key ? publicUrlResolver?.Invoke(key) : null
         };
     }
 }

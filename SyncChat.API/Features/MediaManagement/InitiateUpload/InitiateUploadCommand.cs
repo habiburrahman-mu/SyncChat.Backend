@@ -38,14 +38,18 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
             return Result.Failure<InitiateUploadResponse>(UserErrors.NotFound(currentUserId));
 
         Guid mediaId = Guid.NewGuid();
-        string storageKey = StorageConstants.MediaKeys.For(mediaId);
+
+        bool isUserAvatar = request.Owner.Type == MediaOwnerType.User;
+        string storageKey = isUserAvatar
+            ? StorageConstants.AvatarKeys.For(currentUser.UUID)
+            : StorageConstants.MediaKeys.For(mediaId);
 
         Media media = new()
         {
             Id = mediaId,
             UserId = currentUser.UUID,
             OwnerType = request.Owner.Type,
-            OwnerId = request.Owner.Id,
+            OwnerId = isUserAvatar ? currentUser.UUID.ToString() : request.Owner.Id,
             MimeType = request.File.MimeType,
             SizeBytes = request.File.SizeBytes,
             StorageKey = storageKey,

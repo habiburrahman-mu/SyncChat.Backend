@@ -5,6 +5,7 @@ using SyncChat.API.Shared.Entities;
 using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
+using SyncChat.API.Shared.Storage.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
 
 namespace SyncChat.API.Features.Conversations.GetConversations;
@@ -15,11 +16,13 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IIdentityService identityService;
+    private readonly IBlobStorage blobStorage;
 
-    public GetConversationsQueryHandler(ApplicationDbContext applicationDbContext, IIdentityService identityService)
+    public GetConversationsQueryHandler(ApplicationDbContext applicationDbContext, IIdentityService identityService, IBlobStorage blobStorage)
     {
         this.dbContext = applicationDbContext;
         this.identityService = identityService;
+        this.blobStorage = blobStorage;
     }
 
     public async Task<Result<GetConversationsResponse>> HandleAsync(GetConversationsQuery query, CancellationToken cancellationToken = default)
@@ -74,12 +77,37 @@ public sealed class GetConversationsQueryHandler : IQueryHandler<GetConversation
                               .FirstOrDefault()
                         : null,
 
+                    // map avatar key for the other user in direct conversations (AvatarKey stored on User entity)
+                    OtherUserAvatarKey = cm.Conversation.Type == ConversationType.Direct
+                        ? cm.Conversation.Members
+                              .Where(m => m.UserId != userId)
+                              .Select(m => m.User.AvatarKey)
+                              .FirstOrDefault()
+                        : null,
+
                     LastSeenMessageId = cm.LastSeenMessageId,
 
                     HaveUnreadMessages = cm.Conversation.LastMessageId != null ? (cm.LastSeenMessageId ?? 0) < cm.Conversation.LastMessageId : false
                 })
                 .ToListAsync(cancellationToken);
 
+
+            // Resolve avatar URLs for direct conversations where other user's avatar is stored as a key
+            foreach (var dto in dtos)
+            {
+                if (string.IsNullOrEmpty(dto.AvatarUrl) && !string.IsNullOrEmpty(dto.OtherUserAvatarKey))
+                {
+                    try
+                    {
+                        dto.AvatarUrl = blobStorage.GetPublicObjectUrl(dto.OtherUserAvatarKey!);
+                    }
+                    catch
+                    {
+                        // swallow - if storage cannot resolve the URL fall back to null
+                        dto.AvatarUrl = null;
+                    }
+                }
+            }
 
             return new GetConversationsResponse(dtos);
         }

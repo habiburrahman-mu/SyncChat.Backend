@@ -6,6 +6,7 @@ using SyncChat.API.Shared.Errors;
 using SyncChat.API.Shared.ResultHandling;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Sender.Contracts;
+using SyncChat.API.Shared.Storage.Contracts;
 
 namespace SyncChat.API.Features.Users.UpdateUser;
 
@@ -19,11 +20,13 @@ public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand
 {
     private readonly ApplicationDbContext dbContext;
     private readonly IIdentityService identityService;
+    private readonly IBlobStorage blobStorage;
 
-    public UpdateUserCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService)
+    public UpdateUserCommandHandler(ApplicationDbContext dbContext, IIdentityService identityService, IBlobStorage blobStorage)
     {
         this.dbContext = dbContext;
         this.identityService = identityService;
+        this.blobStorage = blobStorage;
     }
 
     public async Task<Result<UpdateUserResponse>> HandleAsync(UpdateUserCommand command, CancellationToken cancellationToken)
@@ -60,7 +63,8 @@ public sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand
             CreatedAt: user.CreatedAt,
             UpdatedAt: user.UpdatedAt,
             IsVerified: user.IsVerified,
-            IsBanned: user.IsBanned);
+            IsBanned: user.IsBanned,
+            AvatarUrl: user.AvatarKey != null ? blobStorage.GetPublicObjectUrl(user.AvatarKey) : null);
 
     }
 }

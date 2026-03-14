@@ -16,4 +16,5 @@ public sealed record UpdateUserResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     bool IsVerified,
-    bool IsBanned);
+    bool IsBanned,
+    string? AvatarUrl);
