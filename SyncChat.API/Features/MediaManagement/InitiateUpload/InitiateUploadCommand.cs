@@ -37,26 +37,49 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
         if(currentUser is null)
             return Result.Failure<InitiateUploadResponse>(UserErrors.NotFound(currentUserId));
 
-        Guid mediaId = Guid.NewGuid();
-
         bool isUserAvatar = request.Owner.Type == MediaOwnerType.User;
+
+        Guid mediaId = Guid.NewGuid();
         string storageKey = isUserAvatar
             ? StorageConstants.AvatarKeys.For(currentUser.UUID)
             : StorageConstants.MediaKeys.For(mediaId);
 
-        Media media = new()
+        Media? media = null;
+
+        if (isUserAvatar)
         {
-            Id = mediaId,
-            UserId = currentUser.UUID,
-            OwnerType = request.Owner.Type,
-            OwnerId = isUserAvatar ? currentUser.UUID.ToString() : request.Owner.Id,
-            MimeType = request.File.MimeType,
-            SizeBytes = request.File.SizeBytes,
-            StorageKey = storageKey,
-            State = MediaState.Initiated,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
+            media = await dbContext.Media.FirstOrDefaultAsync(m => m.StorageKey == storageKey, cancellationToken);
+        }
+
+        bool createdMedia = false;
+
+        if (media is null)
+        {
+            // create new media row
+            media = new()
+            {
+                Id = mediaId,
+                UserId = currentUser.UUID,
+                OwnerType = request.Owner.Type,
+                OwnerId = isUserAvatar ? currentUser.UUID.ToString() : request.Owner.Id,
+                MimeType = request.File.MimeType,
+                SizeBytes = request.File.SizeBytes,
+                StorageKey = storageKey,
+                State = MediaState.Initiated,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await dbContext.Media.AddAsync(media, cancellationToken);
+            createdMedia = true;
+        }
+        else
+        {
+            media.MimeType = request.File.MimeType;
+            media.SizeBytes = request.File.SizeBytes;
+            media.State = MediaState.Initiated;
+            media.UpdatedAt = DateTimeOffset.UtcNow;
+            mediaId = media.Id;
+        }
 
         MediaUploadSession uploadSession = new()
         {
@@ -69,7 +92,7 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await dbContext.Media.AddAsync(media, cancellationToken);
+        // media already added above when newly created; don't add again.
         await dbContext.MediaUploadSessions.AddAsync(uploadSession, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -92,7 +115,9 @@ public sealed class InitiateUploadCommandHandler : ICommandHandler<InitiateUploa
         }
         catch
         {
-            dbContext.Media.Remove(media);
+            if (createdMedia)
+                dbContext.Media.Remove(media);
+
             dbContext.MediaUploadSessions.Remove(uploadSession);
 
             await dbContext.SaveChangesAsync(cancellationToken);
