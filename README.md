@@ -106,9 +106,9 @@ SyncChat.Backend/
 │   │   ├── Conversations/         ← Create, List, Detail, MarkAsSeen, LastMessage
 │   │   ├── ConversationMembers/   ← Add, Remove, MakeAdmin, RemoveAdminStatus, List
 │   │   ├── Messages/              ← Send, SendMedia, GetMessages
-│   │   ├── MediaManagement/       ← InitiateUpload, ConfirmUpload, GetAccessUrl, MediaUploaded event
+│   │   ├── MediaManagement/       ← InitiateUpload, ConfirmUpload, GetAccessUrl, GetState, MediaUploaded event
 │   │   ├── Notifications/         ← SignalR hub + INotificationClient
-│   │   └── Users/                 ← Detail, ByUserName, Update, MetaData
+│   │   └── Users/                 ← Detail, ByUserName, Update, MetaData (avatar support via `AvatarKey`)
 │   ├── Host/                      ← Assembly scanning (RequestDiscovery, EventDiscovery)
 │   ├── Infrastructure/
 │   │   ├── Persistence/           ← ApplicationDbContext, EF Configurations, Migrations
@@ -322,6 +322,7 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 | **Media** | POST | `/api/media/initiate` | Initiate a media upload |
 | | POST | `/api/media/confirm` | Confirm upload completion |
 | | GET | `/api/media/getAccessUrl?mediaId={guid}` | Get a short-lived presigned download URL |
+| | GET | `/api/media/getState?mediaId={guid}` | Poll media lifecycle state during upload |
 | **SignalR Hub** | — | `/hub/notifications` | Real-time notification hub |
 
 > All routes except `Auth` require a valid JWT Bearer token.
