@@ -347,6 +347,7 @@ Presigned URL generation is **pure local HMAC computation** — the presign clie
 
 > `PublicUrl` is optional when running locally outside Docker (where `Endpoint:Port` is already browser-accessible). It is required in Docker Compose deployments where MinIO is only reachable inside the container network.
 
+![Media Upload Pipeline Architecture](docs-assets/media-upload-send-architecture-diagram.png)
 ![Media Upload Pipeline](docs-assets/media-upload-pipeline.png)
 
 ### Accessing Media (`GET /api/media/getAccessUrl`)
