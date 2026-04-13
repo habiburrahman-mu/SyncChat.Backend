@@ -82,6 +82,8 @@ builder.Services.AddSignalR().AddJsonProtocol(
         options.PayloadSerializerOptions.Converters.Add(jsonStringEnumConverter);
     });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -108,6 +110,8 @@ app.UseCors(corsPolicy);
 app.UseAuthentication().UseAuthorization();
 
 app.MapHub<NotificationHub>(HubRoute.NotificationHub).RequireCors(corsPolicy);
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 try
 {
