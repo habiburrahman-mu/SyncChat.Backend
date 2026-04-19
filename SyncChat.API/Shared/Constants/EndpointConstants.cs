@@ -16,6 +16,9 @@ public class EndpointConstants
         public const string Logout = "/logout";
         public const string LogoutAll = "/logoutAll";
         public const string GoogleAuth = "/googleAuth";
+        public const string PasswordResetRequest = "/passwordResetRequest";
+        public const string PasswordResetVerify = "/passwordResetVerify";
+        public const string PasswordResetComplete = "/passwordResetComplete";
     }
 
     public static class UserRoute

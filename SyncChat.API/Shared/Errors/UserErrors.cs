@@ -44,6 +44,14 @@ public static class UserErrors
          "Users.Invalid.RefreshToken",
          "Invalid refresh token.");
 
+    public static readonly Error InvalidPasswordResetToken = Error.Validation(
+         "Users.Invalid.PasswordResetToken",
+         "The password reset token is invalid or has already been used.");
+
+    public static readonly Error PasswordResetTokenExpired = Error.Validation(
+         "Users.Invalid.PasswordResetTokenExpired",
+         "The password reset token has expired.");
+
     public static Error UserNameNotFound(string userName) => Error.NotFound(
        "Users.NotFound",
        $"The user with the user name = '{userName}' was not found.");
