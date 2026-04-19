@@ -13,4 +13,7 @@ public class JWTSettings
     public string Audience { get; set; } = null!;
     public int AccessTokenExpirationInMinutes { get; set; }
     public int RefreshTokenExpirationInMinutes { get; set; }
+    public string PasswordResetUrlBase { get; set; } = null!;
+    public int PasswordResetExpirationInMinutes { get; set; }
+    public string PasswordResetTokenSecret { get; set; } = null!;
 }

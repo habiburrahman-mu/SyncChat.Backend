@@ -32,6 +32,11 @@ builder.Services.AddOptions<StorageSettings>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddOptions<EmailSettings>()
+    .Bind(builder.Configuration.GetSection("Email"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.AddScoped<ApplicationDbContext>();
 builder.Services.AddScoped<IQuerySender, QuerySender>();
 builder.Services.AddScoped<ICommandSender, CommandSender>();

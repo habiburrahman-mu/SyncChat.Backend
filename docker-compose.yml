@@ -22,8 +22,11 @@ services:
             - JWT__Audience=SyncChatClient
             - JWT__AccessTokenExpirationInMinutes=10
             - JWT__RefreshTokenExpirationInMinutes=10080
+            - JWT__PasswordResetUrlBase=http://localhost:4200/#/auth/reset-password
+            - JWT__PasswordResetExpirationInMinutes=60
+            - JWT__PasswordResetTokenSecret=l9w84@9dk-dkfja393BYjkQABcdfPkd02kd9qSA
             # Google Auth
-            - GoogleAuth__ClientId=YOUR_GOOGLE_CLIENT
+            # - GoogleAuth__ClientId=YOUR_GOOGLE_CLIENT
             # Storage
             - Storage__Endpoint=minio
             - Storage__Port=9000
@@ -32,6 +35,12 @@ services:
             - Storage__Bucket=syncchat
             - Storage__UseSSL=false
             - Storage__PublicUrl=http://localhost:9000
+            # Email
+            # - Email__SmtpHost=smtp.example.com
+            # - Email__SmtpPort=587
+            # - Email__SmtpUser=Your_Provider_User_ID
+            # - Email__SmtpPass=YOUR_API_KEY
+            # - Email__From=Your_Domain_Address
         volumes:
             - /mnt/c/Users/User/SyncChat/SyncChat.API:/app
         depends_on:

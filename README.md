@@ -277,6 +277,267 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 
 ---
 
+## Password Reset Flow
+
+A complete password reset pipeline with **email-based token verification**, **transactional reliability**, and **session invalidation**.
+
+### Overview
+Password reset follows a **three-request pattern** with secure token validation:
+
+1. **Request** — User submits email or username; a reset token is generated and emailed
+2. **Verify** — Client verifies the token is valid before prompting for new password
+3. **Complete** — New password is set, old sessions are revoked
+
+### Architecture
+
+#### Domain Model
+| Entity | Purpose |
+|---|---|
+| `PasswordResetToken` | Secure, time-bound token + usage tracking. Each token is **used once** and **expires after 60 minutes** (configurable). |
+
+#### Services
+| Service | Responsibility |
+|---|---|
+| `IPasswordResetTokenService` | Creates HMAC-SHA256 signed tokens; parses and validates signatures using `CryptographicOperations.FixedTimeEquals()` for timing-attack resistance. |
+| `IEmailService` | Sends HTML emails via SMTP (Resend-compatible). Uses `SendEmailRequest` record for loose coupling. |
+| `IDomainEventPublisher` | Publishes `SendPasswordResetEmailEvent` to the **transactional outbox** for reliable email delivery. |
+
+#### Event-Driven Email Delivery
+Password reset emails are sent via the **Outbox Pattern**:
+
+```
+PasswordResetRequestCommand Handler
+    ↓
+Create PasswordResetToken in DB
+    ↓
+Publish SendPasswordResetEmailEvent to Outbox (same DB transaction)
+    ↓
+Transaction commits
+    ↓
+ImmediateEventDispatcher picks up event from Channel<T>
+    ↓
+SendPasswordResetEmailEventHandler renders HTML & calls IEmailService.SendEmailAsync()
+    ↓
+If immediate dispatch fails, OutboxDispatcher retries on next cycle
+```
+
+This ensures emails are **never lost** — even if the app crashes after persisting the token but before sending the email, the outbox dispatcher will retry.
+
+### Request Pipeline
+
+#### Step 1: Request Reset Token (`POST /api/auth/passwordResetRequest`)
+
+**Request Body:**
+```json
+{
+  "emailOrUserName": "john.doe@example.com"
+}
+```
+
+**Handler Actions:**
+1. Search for a `UserAuthProvider` with `Provider = Local` matching the email or username (case-insensitive)
+2. If not found, return success anyway (do not leak account existence)
+3. Revoke any unused tokens for this user: `UPDATE PasswordResetTokens SET UsedAt = now WHERE UserId = ? AND UsedAt IS NULL`
+4. Create a new `PasswordResetToken` with:
+   - `Id`: GUID
+   - `UserId`: matched user's ID
+   - `ExpiresAt`: now + **60 minutes** (from JWT settings)
+   - `CreatedAt`: now
+   - `UsedAt`: null (unused)
+5. Publish `SendPasswordResetEmailEvent` to the outbox with token ID, user email, and full name
+6. Return `200 OK` (success, even if user not found — prevents email enumeration)
+
+**Email Rendering:**
+```
+From: noreply@syncchat.com
+Subject: Reset your SyncChat password
+Body:
+  - Greeting with user's full name
+  - Call-to-action button linking to password reset UI
+  - Fallback plain-text link
+  - Expiration notice (60 minutes)
+  - "If you didn't request this, ignore it" disclaimer
+```
+
+**Response:**
+```json
+{
+  "isSuccess": true
+}
+```
+
+---
+
+#### Step 2: Verify Token (`POST /api/auth/passwordResetVerify`)
+
+**Request Body:**
+```json
+{
+  "token": "<base64-encoded-hmac-signed-token>"
+}
+```
+
+**Handler Actions:**
+1. Call `IPasswordResetTokenService.TryParseToken(token, out resetTokenId)`
+   - Splits token by `.` separator
+   - Extracts GUID (left side)
+   - Recomputes expected HMAC signature of the GUID using `PasswordResetTokenSecret`
+   - Uses `FixedTimeEquals()` to prevent timing attacks
+   - Returns false if signature or format is invalid
+2. If parse fails → return `400 Bad Request` with error `InvalidPasswordResetToken`
+3. Query `PasswordResetTokens` by `resetTokenId`
+   - If not found → return `400 Bad Request`
+   - If `UsedAt IS NOT NULL` (already used) → return `400 Bad Request`
+   - If `ExpiresAt ≤ now` (expired) → return `400 Bad Request`
+4. Return `200 OK` — token is valid and ready for password reset
+
+**Response:**
+```json
+{
+  "isSuccess": true
+}
+```
+
+**Use Case:**
+The frontend calls this endpoint when the user clicks the reset link. If valid, prompt the user to enter a new password. If invalid, show an error page with a link back to "Request another reset."
+
+---
+
+#### Step 3: Complete Reset (`POST /api/auth/passwordResetComplete`)
+
+**Request Body:**
+```json
+{
+  "token": "<base64-encoded-hmac-signed-token>",
+  "newPassword": "SecureNewPassword123"
+}
+```
+
+**Validation:**
+- `Token`: must not be empty
+- `NewPassword`: must be ≥ 8 characters
+
+**Handler Actions:**
+1. Parse token (same as Step 2)
+2. Fetch `PasswordResetToken` with include `User` navigation property
+   - If not found or expired or already used → return `400 Bad Request`
+3. Mark token as used: `resetToken.UsedAt = now`
+4. Hash new password: `resetToken.User.PasswordHash = passwordHasher.Hash(newPassword)`
+5. Update user's `UpdatedAt` timestamp
+6. **Session Invalidation** — revoke all active refresh tokens for this user:
+   ```sql
+   UPDATE RefreshTokens 
+   SET RevokedAt = now 
+   WHERE UserId = ? AND RevokedAt IS NULL
+   ```
+   This forces the user to log in again on all devices.
+7. **Invalidate other reset tokens:**
+   ```sql
+   UPDATE PasswordResetTokens 
+   SET UsedAt = now 
+   WHERE UserId = ? AND UsedAt IS NULL
+   ```
+8. Save all changes and return `200 OK`
+
+**Security Notes:**
+- All active sessions (refresh tokens) are revoked, protecting the account if the reset was unauthorized
+- Only one reset token can be used per request — subsequent uses return an error
+- Token signatures are verified with `FixedTimeEquals()` to prevent timing-based attacks
+
+**Response:**
+```json
+{
+  "isSuccess": true
+}
+```
+
+---
+
+### Configuration Reference
+
+Add the following to `appsettings.json` under the `"JWT"` section:
+
+```json
+"JWT": {
+  "AccessTokenSecret": "min-32-char-secret-for-access-token",
+  "RefreshTokenSecret": "min-32-char-secret-for-refresh-token",
+  "Issuer": "SyncChat",
+  "Audience": "SyncChat",
+  "AccessTokenExpirationInMinutes": 10,
+  "RefreshTokenExpirationInMinutes": 10080,
+  
+  // Password Reset Configuration
+  "PasswordResetUrlBase": "http://localhost:4200/password-reset",
+  "PasswordResetExpirationInMinutes": 60,
+  "PasswordResetTokenSecret": "min-32-char-secret-for-password-reset-tokens"
+}
+```
+
+And email settings under `"Email"` (We're using [Resend](https://resend.com/), you can use your own, just change the host settings):
+
+```json
+"Email": {
+  "SmtpHost": "smtp.resend.com",
+  "SmtpPort": 587,
+  "SmtpUser": "Your_Provider_User_ID",
+  "SmtpPass": "YOUR_API_KEY",
+  "From": "Your_Domain_Address"
+}
+```
+
+| Setting | Type | Default | Usage |
+|---|---|---|---|
+| `PasswordResetUrlBase` | `string` | — | Base URL for password reset link sent in email (e.g., `http://localhost:4200/password-reset`). Client appends `?token=<token>` automatically. |
+| `PasswordResetExpirationInMinutes` | `int` | `60` | Token lifetime in minutes. After this duration, calling `/verify` or `/complete` will fail. |
+| `PasswordResetTokenSecret` | `string` | — | At least 16 characters. Used to sign password reset tokens with HMAC-SHA256. Must be different from access/refresh secrets. |
+| `SmtpHost` | `string` | `smtp.resend.com` | SMTP server hostname. Use `smtp.resend.com` for Resend or your own SMTP host. |
+| `SmtpPort` | `int` | `587` | SMTP port. Use `587` for TLS or `465` for implicit SSL. |
+| `SmtpUser` | `string` | — | SMTP username. For Resend, use `api`. |
+| `SmtpPass` | `string` | — | SMTP password or API key. For Resend, paste your API key. |
+| `From` | `string` | — | Sender email address. Must be verified with your email provider (e.g., Resend). |
+
+---
+
+### Error Handling
+
+| Endpoint | Error | HTTP Status | Description |
+|---|---|---|---|
+| `/request` | (none) | `200 OK` | Always returns success, even if user not found, to prevent email enumeration. |
+| `/verify` | `InvalidPasswordResetToken` | `400 Bad Request` | Token not found, already used, expired, or signature invalid. |
+| `/complete` | `InvalidPasswordResetToken` | `400 Bad Request` | Same as verify. |
+| `/complete` | `ValidationError` | `400 Bad Request` | Password too short or token empty. |
+
+---
+
+### Database Schema
+
+#### PasswordResetTokens Table
+```sql
+CREATE TABLE "PasswordResetTokens" (
+    "Id" uuid NOT NULL PRIMARY KEY,
+    "UserId" bigint NOT NULL,
+    "ExpiresAt" timestamp with time zone NOT NULL,
+    "CreatedAt" timestamp with time zone NOT NULL,
+    "UsedAt" timestamp with time zone NULL,
+    CONSTRAINT "FK_PasswordResetTokens_Users_UserId" 
+      FOREIGN KEY ("UserId") REFERENCES "Users"("UserID") ON DELETE CASCADE
+);
+
+CREATE INDEX "IX_PasswordResetTokens_UserId" ON "PasswordResetTokens"("UserId");
+```
+
+---
+
+### Migration
+
+The `PasswordResetTokens` table is created via EF Core migration `20260419091346_AddPasswordResetTokens`. To apply:
+
+```bash
+dotnet ef database update --project SyncChat.API
+```
+
+---
+
 ### Configuration Reference
 
 ```json
@@ -302,6 +563,9 @@ Every token is bound to a `DeviceIdentifier` supplied by the client at login tim
 | | POST | `/api/auth/logout` | Logout current device |
 | | POST | `/api/auth/logoutAll` | Logout all devices |
 | | POST | `/api/auth/googleAuth` | Authenticate via Google |
+| | POST | `/api/auth/password-reset/request` | Request a password reset token via email |
+| | POST | `/api/auth/password-reset/verify` | Verify a password reset token is valid |
+| | POST | `/api/auth/password-reset/complete` | Complete password reset with new password |
 | **User** | GET | `/api/user/getByUserName` | Get user by username |
 | | GET | `/api/user/getDetail` | Get user detail |
 | | PUT | `/api/user/update` | Update user profile |
@@ -483,7 +747,7 @@ The `SyncChat.Test` project uses **xUnit** with **FluentAssertions** and **Moq**
 
 ### Test Coverage
 
-**Total Tests: 95** ✅ (All Passing)
+**Total Tests: 120** ✅ (All Passing)
 
 #### Security & Authentication Layer (Complete)
 
@@ -495,6 +759,14 @@ The `SyncChat.Test` project uses **xUnit** with **FluentAssertions** and **Moq**
 | **RefreshTokenCookieManager** | `RefreshTokenCookieManagerTests.cs` | 14 | Cookie append/get/delete, lifecycle, various token formats |
 | **RefreshTokenRules** | `RefreshTokenRulesTests.cs` | 20 | Token creation/rotation, revocation, edge cases |
 | **IdentityService** | `IdentityServiceTests.cs` | 16 | User ID extraction, claim parsing, invalid format handling |
+| **PasswordResetTokenService** | `PasswordResetTokenServiceTests.cs` | 17 | Token creation, parsing, signature validation, configuration validation |
+
+#### Features & Notifications
+
+| Component | Test File | Tests | Coverage |
+|-----------|-----------|-------|----------|
+| **SmtpEmailService** | `SmtpEmailServiceTests.cs` | 4 | Email configuration, request validation, service initialization |
+| **PasswordResetComplete** | `PasswordResetCompleteTests.cs` | 8 | Command validation, handler error cases, token expiration |
 
 #### Test Patterns
 - ✅ **AAA Pattern** (Arrange-Act-Assert)
@@ -513,7 +785,10 @@ dotnet test
 dotnet test --verbosity normal
 
 # Run specific test class
-dotnet test --filter "FullyQualifiedName~RefreshTokenRulesTests"
+dotnet test --filter "FullyQualifiedName~PasswordResetTokenServiceTests"
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true
 ```
 
 #### Test Organization
@@ -521,16 +796,23 @@ dotnet test --filter "FullyQualifiedName~RefreshTokenRulesTests"
 Tests are organized by layer and component:
 ```
 SyncChat.Test/
-└── Infrastructure/
-    └── Security/
-        ├── PasswordHasherTests.cs
-        ├── TokenProviderTests.cs
-        ├── CookieOptionsProviderTests.cs
-        ├── RefreshTokenCookieManagerTests.cs
-        ├── RefreshTokenRulesTests.cs
-        ├── IdentityServiceTests.cs
-        └── Fixtures/
-            └── TokenProviderTestFixture.cs
+├── Infrastructure/
+│   ├── Security/
+│   │   ├── PasswordHasherTests.cs
+│   │   ├── TokenProviderTests.cs
+│   │   ├── CookieOptionsProviderTests.cs
+│   │   ├── RefreshTokenCookieManagerTests.cs
+│   │   ├── RefreshTokenRulesTests.cs
+│   │   ├── IdentityServiceTests.cs
+│   │   ├── PasswordResetTokenServiceTests.cs
+│   │   └── Fixtures/
+│   │       └── TokenProviderTestFixture.cs
+│   └── Notifications/
+│       └── SmtpEmailServiceTests.cs
+└── Features/
+    └── Auth/
+        └── PasswordReset/
+            └── PasswordResetCompleteTests.cs
 ```
 
 ---

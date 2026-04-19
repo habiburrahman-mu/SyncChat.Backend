@@ -19,6 +19,7 @@ using SyncChat.API.Shared.Notification.Contracts;
 using SyncChat.API.Shared.Security.Contracts;
 using SyncChat.API.Shared.Socket.Contracts;
 using SyncChat.API.Shared.Storage.Contracts;
+using SyncChat.API.Infrastructure.Services;
 using System.Text;
 using static SyncChat.API.Shared.Constants.EndpointConstants;
 using static SyncChat.API.Shared.Constants.StorageConstants;
@@ -136,6 +137,8 @@ public static class DependencyInjection
     private static IServiceCollection AddNotificationServices(this IServiceCollection services)
     {
         services.AddScoped<IMessageNotificationService, SignalRMessageNotificationService>();
+        services.AddSingleton<IEmailService, SmtpEmailService>();
+        services.AddSingleton<IPasswordResetTokenService, PasswordResetTokenService>();
 
         return services;
     }
