@@ -23,7 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<MediaUploadSession> MediaUploadSessions { get; set; } = null!;
     public DbSet<MediaReference> MediaReferences { get; set; } = null!;
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
-
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +41,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new MediaUploadSessionConfiguration());
         modelBuilder.ApplyConfiguration(new MediaReferenceConfiguration());
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new PasswordResetTokenConfiguration());
 
         base.OnModelCreating(modelBuilder);
     }
